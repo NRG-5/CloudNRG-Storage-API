@@ -9,5 +9,8 @@ import java.util.UUID;
 
 @Repository
 public interface FolderRepository extends JpaRepository<Folder, UUID> {
-    Optional<Folder> findByUser_IdAndName(UUID userId, String name);
+
+    Optional<Folder> findFolderById(UUID id);
+
+    Optional<Folder> findFolderByUser_IdAndName(UUID userId, String name);
 }
