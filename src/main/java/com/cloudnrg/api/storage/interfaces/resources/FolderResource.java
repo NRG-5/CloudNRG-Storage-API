@@ -6,6 +6,8 @@ public record FolderResource(
         UUID id,
         String name,
         UUID parentFolderId,
-        UUID userId
+        UUID userId,
+        Long createTime,
+        Long modTime
 ) {
 }

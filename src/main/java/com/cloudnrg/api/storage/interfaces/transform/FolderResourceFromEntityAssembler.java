@@ -9,7 +9,9 @@ public class FolderResourceFromEntityAssembler {
                 entity.getId(),
                 entity.getName(),
                 entity.getParentFolder() != null ? entity.getParentFolder().getId() : null,
-                entity.getUser().getId()
+                entity.getUser().getId(),
+                entity.getCreatedAt().getEpochSecond(),
+                entity.getUpdatedAt().getEpochSecond()
         );
     }
 }
