@@ -5,6 +5,8 @@ import com.cloudnrg.api.storage.domain.services.FileCommandService;
 import com.cloudnrg.api.storage.interfaces.resources.FileResource;
 import com.cloudnrg.api.storage.interfaces.transform.FileResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +33,11 @@ public class FileController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE, // Explicitly set content type
             produces = MediaType.APPLICATION_JSON_VALUE
     )
+    @ApiResponses(value = {
+            @ApiResponse( responseCode = "201", description = "File uploaded successfully"),
+            @ApiResponse( responseCode = "400", description = "Invalid input data"),
+            @ApiResponse( responseCode = "401", description = "Unauthorized"),
+    })
     public ResponseEntity<FileResource> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("userId") UUID userId

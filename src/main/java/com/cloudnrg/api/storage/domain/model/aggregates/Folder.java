@@ -28,4 +28,9 @@ public class Folder extends AuditableAbstractAggregateRoot<Folder> {
     @JoinColumn(name = "user_id")
     User user;
 
+    public Folder(String name, Folder parentFolder, User user) {
+        this.name = name;
+        this.parentFolder = parentFolder;
+        this.user = user;
+    }
 }
