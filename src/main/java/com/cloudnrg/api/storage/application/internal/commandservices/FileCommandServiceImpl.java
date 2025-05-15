@@ -2,7 +2,7 @@ package com.cloudnrg.api.storage.application.internal.commandservices;
 
 import com.cloudnrg.api.iam.infrastructure.persistance.jpa.repositories.UserRepository;
 import com.cloudnrg.api.storage.domain.model.aggregates.CloudFile;
-import com.cloudnrg.api.storage.domain.model.command.CreateFileCommand;
+import com.cloudnrg.api.storage.domain.model.commands.CreateFileCommand;
 import com.cloudnrg.api.storage.domain.services.FileCommandService;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.CloudFileRepository;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.FolderRepository;
@@ -39,11 +39,11 @@ public class FileCommandServiceImpl implements FileCommandService {
     public Optional<CloudFile> handle(CreateFileCommand command) {
 
         //find the first folder for the user
-        var rootFolder = folderRepository.findByUser_IdAndName(command.userId(), "root");
+        var folder  = folderRepository.findFolderById(command.folderId());
         var user = userRepository.findUserById(command.userId());
 
-        if (rootFolder.isEmpty()) {
-            throw new RuntimeException("Root folder not found");
+        if (folder.isEmpty()) {
+            throw new RuntimeException("Folder not found");
         }
 
         if (user.isEmpty()) {
@@ -60,15 +60,16 @@ public class FileCommandServiceImpl implements FileCommandService {
             throw new RuntimeException("Failed to upload file: " + e.getMessage());
         }
 
+        var tempPath = Paths.get(UPLOAD_DIR + tempFile.getOriginalFilename());
+
         var file = new CloudFile(
                 tempFile.getOriginalFilename(),
-                rootFolder.get(),
+                folder.get(),
                 user.get(),
                 tempFile.getSize(),
                 tempFile.getContentType(),
                 md5Hash,
-                rootFolder.get().getName() + "\\" +
-                        tempFile.getOriginalFilename()
+                tempPath.toString()
         );
 
         try {

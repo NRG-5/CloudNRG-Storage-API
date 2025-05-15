@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -46,7 +47,7 @@ public class UserController {
 
         var userResource = UserResourceFromEntityAssembler.toResourceFromEntity(user.get());
 
-        return ResponseEntity.ok(userResource);
+        return new ResponseEntity<>(userResource , HttpStatus.CREATED);
     }
 
 }

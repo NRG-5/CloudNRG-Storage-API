@@ -1,6 +1,5 @@
 package com.cloudnrg.api.iam.domain.model.aggregates;
 
-import com.cloudnrg.api.iam.domain.model.events.UserCreationEvent;
 import com.cloudnrg.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import jakarta.persistence.Entity;
 import jakarta.validation.constraints.NotNull;
@@ -28,10 +27,6 @@ public class User extends AuditableAbstractAggregateRoot<User> {
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
-    }
-
-    public void userCreation(){
-        this.registerEvent(new UserCreationEvent(this, this.getId()));
     }
 
 }
