@@ -3,6 +3,7 @@ package com.cloudnrg.api.storage.interfaces;
 
 import com.cloudnrg.api.storage.domain.model.queries.GetRootFolderByUserIdQuery;
 import com.cloudnrg.api.storage.domain.services.FolderQueryService;
+import com.cloudnrg.api.storage.interfaces.resources.FolderResource;
 import com.cloudnrg.api.storage.interfaces.transform.FolderResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -37,7 +38,7 @@ public class FolderController {
             @ApiResponse( responseCode = "400", description = "Invalid input data"),
             @ApiResponse( responseCode = "401", description = "Unauthorized"),
     })
-    public ResponseEntity<?> getRootFolderByUserId(
+    public ResponseEntity<FolderResource> getRootFolderByUserId(
             @RequestParam UUID userId
     ) {
 
