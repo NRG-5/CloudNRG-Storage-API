@@ -2,11 +2,12 @@ package com.cloudnrg.api.shared.domain.model.aggregates;
 
 import jakarta.persistence.*;
 import lombok.Getter;
-import org.springframework.data.annotation.CreatedDate;
+import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.domain.AbstractAggregateRoot;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
@@ -15,17 +16,17 @@ import java.util.UUID;
 public class AuditableAbstractAggregateRoot<T extends AbstractAggregateRoot<T>> extends AbstractAggregateRoot<T> {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Getter
-    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
     @Getter
-    @CreatedDate
-    @Column(nullable = false, updatable = false)
-    private Date createdAt;
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
 
     @Getter
     @LastModifiedDate
-    @Column(nullable = false)
-    private Date updatedAt;
+    @Column(nullable = false, columnDefinition = "TIMESTAMP")
+    private Instant updatedAt;
 }
