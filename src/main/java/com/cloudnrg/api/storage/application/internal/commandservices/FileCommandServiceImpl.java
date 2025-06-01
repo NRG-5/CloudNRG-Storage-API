@@ -3,6 +3,7 @@ package com.cloudnrg.api.storage.application.internal.commandservices;
 import com.cloudnrg.api.iam.infrastructure.persistance.jpa.repositories.UserRepository;
 import com.cloudnrg.api.storage.domain.model.aggregates.CloudFile;
 import com.cloudnrg.api.storage.domain.model.commands.CreateFileCommand;
+import com.cloudnrg.api.storage.domain.model.commands.DeleteFileByIdCommand;
 import com.cloudnrg.api.storage.domain.services.FileCommandService;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.CloudFileRepository;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.FolderRepository;
@@ -89,5 +90,23 @@ public class FileCommandServiceImpl implements FileCommandService {
         }
 
         return Optional.of(file);
+    }
+
+    @Override
+    public void handle(DeleteFileByIdCommand command) {
+        var file = cloudFileRepository.findById(command.fileId());
+
+        if (file.isEmpty()) {
+            throw new RuntimeException("File not found");
+        }
+
+        try {
+
+
+            // Delete the file record from the database
+            cloudFileRepository.delete(file.get());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete file: " + e.getMessage());
+        }
     }
 }
