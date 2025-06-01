@@ -13,9 +13,12 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@AllArgsConstructor
 public class ObjectHistoryQueryServiceImpl implements ObjectHistoryQueryService {
     private final ObjectHistoryRepository repository;
+
+    public ObjectHistoryQueryServiceImpl(ObjectHistoryRepository repository) {
+        this.repository = repository;
+    }
 
     @Override
     public Optional<ObjectHistory> handle(GetObjectHistoryByIdQuery query) {
@@ -24,11 +27,11 @@ public class ObjectHistoryQueryServiceImpl implements ObjectHistoryQueryService 
 
     @Override
     public List<ObjectHistory> handle(GetAllObjectsHistoryByUserIdQuery query) {
-        return repository.findAllByUserId(query.userId());
+        return repository.findAllByUser_Id(query.userId());
     }
 
     @Override
     public List<ObjectHistory> handle(GetAllObjectsHistoryByFileIdQuery query) {
-        return repository.findAllByFileId(query.fileId());
+        return repository.findAllByFile_Id(query.fileId());
     }
 }

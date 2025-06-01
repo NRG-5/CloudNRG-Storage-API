@@ -33,9 +33,6 @@ public class ObjectHistory extends AuditableAbstractAggregateRoot<ObjectHistory>
     @JoinColumn(name = "user_id")
     private User user;
 
-    @CreatedDate
-    private Date createdAt;
-
     public ObjectHistory(CloudFile file, User user, String action) {
         this.file = file;
         this.action = Action.valueOf(action.toUpperCase());

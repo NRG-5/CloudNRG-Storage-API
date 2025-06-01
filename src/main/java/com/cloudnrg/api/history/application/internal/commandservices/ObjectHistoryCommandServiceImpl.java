@@ -12,11 +12,19 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-@AllArgsConstructor
 public class ObjectHistoryCommandServiceImpl implements ObjectHistoryCommandService {
     private final ObjectHistoryRepository objectHistoryRepository;
     private final UserRepository userRepository;
     private final CloudFileRepository cloudFileRepository;
+
+    public ObjectHistoryCommandServiceImpl(
+            ObjectHistoryRepository objectHistoryRepository,
+            UserRepository userRepository,
+            CloudFileRepository cloudFileRepository) {
+        this.objectHistoryRepository = objectHistoryRepository;
+        this.userRepository = userRepository;
+        this.cloudFileRepository = cloudFileRepository;
+    }
 
     @Override
     public Optional<ObjectHistory> handle(CreateObjectHistoryCommand command) {
