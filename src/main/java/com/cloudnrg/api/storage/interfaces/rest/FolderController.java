@@ -1,10 +1,10 @@
-package com.cloudnrg.api.storage.interfaces;
+package com.cloudnrg.api.storage.interfaces.rest;
 
 
 import com.cloudnrg.api.storage.domain.model.queries.GetRootFolderByUserIdQuery;
 import com.cloudnrg.api.storage.domain.services.FolderQueryService;
-import com.cloudnrg.api.storage.interfaces.resources.FolderResource;
-import com.cloudnrg.api.storage.interfaces.transform.FolderResourceFromEntityAssembler;
+import com.cloudnrg.api.storage.interfaces.rest.resources.FolderResource;
+import com.cloudnrg.api.storage.interfaces.rest.transform.FolderResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

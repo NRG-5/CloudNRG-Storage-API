@@ -1,12 +1,12 @@
-package com.cloudnrg.api.storage.interfaces;
+package com.cloudnrg.api.storage.interfaces.rest;
 
 import com.cloudnrg.api.storage.domain.model.commands.CreateFileCommand;
 import com.cloudnrg.api.storage.domain.model.queries.GetFileByIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFilesByFolderIdQuery;
 import com.cloudnrg.api.storage.domain.services.FileCommandService;
 import com.cloudnrg.api.storage.domain.services.FileQueryService;
-import com.cloudnrg.api.storage.interfaces.resources.FileResource;
-import com.cloudnrg.api.storage.interfaces.transform.FileResourceFromEntityAssembler;
+import com.cloudnrg.api.storage.interfaces.rest.resources.FileResource;
+import com.cloudnrg.api.storage.interfaces.rest.transform.FileResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -53,9 +53,9 @@ public class FileController {
             @ApiResponse( responseCode = "401", description = "Unauthorized"),
     })
     public ResponseEntity<FileResource> uploadFile(
-            @RequestParam("file") MultipartFile file,
             @RequestParam("userId") UUID userId,
-            @RequestParam("folderId") UUID folderId
+            @RequestParam("folderId") UUID folderId,
+            @RequestParam("file") MultipartFile file
 
     ) {
 
@@ -75,6 +75,7 @@ public class FileController {
 
         return new ResponseEntity<>(fileResource, HttpStatus.CREATED);
     }
+
 
     @Operation(summary = "Get files by folder ID", description = "Retrieve files associated with a specific folder ID")
     @GetMapping(value = "/folder/{folderId}", produces = MediaType.APPLICATION_JSON_VALUE)

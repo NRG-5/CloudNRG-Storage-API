@@ -1,10 +1,10 @@
-package com.cloudnrg.api.iam.interfaces;
+package com.cloudnrg.api.iam.interfaces.rest;
 
 import com.cloudnrg.api.iam.domain.model.commands.CreateUserCommand;
 import com.cloudnrg.api.iam.domain.services.UserCommandService;
-import com.cloudnrg.api.iam.interfaces.resources.CreateUserResource;
-import com.cloudnrg.api.iam.interfaces.resources.UserResource;
-import com.cloudnrg.api.iam.interfaces.transform.UserResourceFromEntityAssembler;
+import com.cloudnrg.api.iam.interfaces.rest.resources.CreateUserResource;
+import com.cloudnrg.api.iam.interfaces.rest.resources.UserResource;
+import com.cloudnrg.api.iam.interfaces.rest.transform.UserResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
