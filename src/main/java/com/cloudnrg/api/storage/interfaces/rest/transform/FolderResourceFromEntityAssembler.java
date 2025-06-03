@@ -1,7 +1,7 @@
-package com.cloudnrg.api.storage.interfaces.transform;
+package com.cloudnrg.api.storage.interfaces.rest.transform;
 
 import com.cloudnrg.api.storage.domain.model.aggregates.Folder;
-import com.cloudnrg.api.storage.interfaces.resources.FolderResource;
+import com.cloudnrg.api.storage.interfaces.rest.resources.FolderResource;
 
 public class FolderResourceFromEntityAssembler {
     public static FolderResource toResourceFromEntity (Folder entity){

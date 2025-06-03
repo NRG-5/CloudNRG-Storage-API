@@ -1,4 +1,4 @@
-package com.cloudnrg.api.iam.interfaces.resources;
+package com.cloudnrg.api.iam.interfaces.rest.resources;
 
 import java.util.UUID;
 

@@ -1,7 +1,7 @@
-package com.cloudnrg.api.iam.interfaces.transform;
+package com.cloudnrg.api.iam.interfaces.rest.transform;
 
 import com.cloudnrg.api.iam.domain.model.aggregates.User;
-import com.cloudnrg.api.iam.interfaces.resources.UserResource;
+import com.cloudnrg.api.iam.interfaces.rest.resources.UserResource;
 
 public class UserResourceFromEntityAssembler {
 
