@@ -4,10 +4,12 @@ import com.cloudnrg.api.iam.infrastructure.persistance.jpa.repositories.UserRepo
 import com.cloudnrg.api.storage.domain.model.aggregates.CloudFile;
 import com.cloudnrg.api.storage.domain.model.commands.CreateFileCommand;
 import com.cloudnrg.api.storage.domain.model.commands.DeleteFileByIdCommand;
+import com.cloudnrg.api.storage.domain.model.events.CreateFileEvent;
 import com.cloudnrg.api.storage.domain.services.FileCommandService;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.CloudFileRepository;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.FolderRepository;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -26,13 +28,16 @@ public class FileCommandServiceImpl implements FileCommandService {
 
     private static final String UPLOAD_DIR = "C:\\Users\\Neo\\Documents\\provisional-storage\\";
 
-    public FileCommandServiceImpl(
-            CloudFileRepository cloudFileRepository,
-            FolderRepository folderRepository,
-            UserRepository userRepository) {
+    private final ApplicationEventPublisher eventPublisher;
+
+    public FileCommandServiceImpl(CloudFileRepository cloudFileRepository,
+                                 FolderRepository folderRepository,
+                                 UserRepository userRepository,
+                                 ApplicationEventPublisher eventPublisher) {
         this.cloudFileRepository = cloudFileRepository;
         this.folderRepository = folderRepository;
         this.userRepository = userRepository;
+        this.eventPublisher = eventPublisher;
     }
 
 
@@ -84,6 +89,9 @@ public class FileCommandServiceImpl implements FileCommandService {
 
             Path filePath = uploadPath.resolve(Objects.requireNonNull(tempFile.getOriginalFilename()));
             tempFile.transferTo(filePath.toFile());
+
+            // Publish the event after saving the file
+            eventPublisher.publishEvent(new CreateFileEvent(file, file.getId(), user.get().getId()));
 
         } catch (Exception e) {
             throw new IllegalArgumentException("Error while saving: " + e.getMessage());
