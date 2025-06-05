@@ -5,9 +5,7 @@ import com.cloudnrg.api.history.domain.model.valueobjects.Action;
 import com.cloudnrg.api.iam.domain.model.aggregates.User;
 import com.cloudnrg.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import com.cloudnrg.api.storage.domain.model.aggregates.CloudFile;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,18 +25,17 @@ public class ObjectHistory extends AuditableAbstractAggregateRoot<ObjectHistory>
     private CloudFile file;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Action action;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
-    @CreatedDate
-    private Date createdAt;
-
-    public ObjectHistory(CloudFile file, User user, String action) {
+    public ObjectHistory(CloudFile file, User user, Action action) {
         this.file = file;
-        this.action = Action.valueOf(action.toUpperCase());
+        this.action = action;
         this.user = user;
     }
 
