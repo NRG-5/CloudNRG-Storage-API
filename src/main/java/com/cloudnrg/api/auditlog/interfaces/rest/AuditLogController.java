@@ -1,6 +1,9 @@
 package com.cloudnrg.api.auditlog.interfaces.rest;
 
+import com.cloudnrg.api.auditlog.domain.model.queries.GetAuditLogsByFiltersQuery;
 import com.cloudnrg.api.auditlog.domain.model.queries.GetAuditLogsByUserQuery;
+import com.cloudnrg.api.auditlog.domain.model.valueobjects.AuditAction;
+import com.cloudnrg.api.auditlog.domain.model.valueobjects.AuditTargetType;
 import com.cloudnrg.api.auditlog.domain.services.AuditLogQueryService;
 
 import com.cloudnrg.api.auditlog.interfaces.rest.resources.AuditLogResource;
@@ -14,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -41,4 +45,27 @@ public class AuditLogController {
                 .toList();
         return ResponseEntity.ok(resources);
     }
+
+
+    @Operation(summary = "Filter audit logs", description = "Retrieve logs by optional filters")
+    @GetMapping("/filter")
+    public ResponseEntity<List<AuditLogResource>> getLogsByFilters(
+            @RequestParam(required = false) UUID userId,
+            @RequestParam(required = false) AuditAction action,
+            @RequestParam(required = false) AuditTargetType targetType
+    ) {
+        var query = new GetAuditLogsByFiltersQuery(
+                Optional.ofNullable(userId),
+                Optional.ofNullable(action),
+                Optional.ofNullable(targetType)
+        );
+
+        var logs = auditLogQueryService.handle(query);
+        var resources = logs.stream()
+                .map(AuditLogResourceAssembler::toResourceFromEntity)
+                .toList();
+
+        return ResponseEntity.ok(resources);
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.cloudnrg.api.auditlog.application.internal.queryservices;
 
 import com.cloudnrg.api.auditlog.domain.model.aggregates.AuditLog;
+import com.cloudnrg.api.auditlog.domain.model.queries.GetAuditLogsByFiltersQuery;
 import com.cloudnrg.api.auditlog.domain.model.queries.GetAuditLogsByUserQuery;
 
 import com.cloudnrg.api.auditlog.domain.services.AuditLogQueryService;
@@ -22,5 +23,17 @@ public class AuditLogQueryServiceImpl implements AuditLogQueryService {
     @Override
     public List<AuditLog> handle(GetAuditLogsByUserQuery query) {
         return auditLogRepository.findByUserId(query.userId());
+    }
+
+    @Override
+    public List<AuditLog> handle(GetAuditLogsByFiltersQuery query) {
+
+        var all = auditLogRepository.findAll();
+        return all.stream()
+                .filter(log -> query.userId().map(id -> log.getUserId().equals(id)).orElse(true))
+                .filter(log -> query.action().map(act -> log.getAction().equals(act)).orElse(true))
+                .filter(log -> query.targetType().map(t -> log.getTarget().equals(t)).orElse(true))
+
+                .toList();
     }
 }

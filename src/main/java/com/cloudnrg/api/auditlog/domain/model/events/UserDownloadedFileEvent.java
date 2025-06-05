@@ -1,28 +1,20 @@
 package com.cloudnrg.api.auditlog.domain.model.events;
 
+import lombok.Getter;
+import org.springframework.context.ApplicationEvent;
+
 import java.util.UUID;
 
-public class UserDownloadedFileEvent {
+@Getter
+public class UserDownloadedFileEvent extends ApplicationEvent {
     private final UUID userId;
     private final UUID fileId;
     private final String fileName;
 
-    public UserDownloadedFileEvent(UUID userId, UUID fileId, String fileName) {
+    public UserDownloadedFileEvent(Object source, UUID userId, UUID fileId, String fileName) {
+        super(source);
         this.userId = userId;
         this.fileId = fileId;
         this.fileName = fileName;
     }
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public UUID getFileId() {
-        return fileId;
-    }
-
-    public String getFileName() {
-        return fileName;
-    }
 }
-

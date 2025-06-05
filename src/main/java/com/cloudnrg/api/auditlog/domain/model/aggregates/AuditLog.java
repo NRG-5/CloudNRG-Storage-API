@@ -1,6 +1,7 @@
 package com.cloudnrg.api.auditlog.domain.model.aggregates;
 
 import com.cloudnrg.api.auditlog.domain.model.valueobjects.AuditAction;
+import com.cloudnrg.api.auditlog.domain.model.valueobjects.AuditTargetType;
 import com.cloudnrg.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -21,7 +22,8 @@ public class AuditLog extends AuditableAbstractAggregateRoot<AuditLog> {
     private AuditAction action;
 
     @Column(nullable = false)
-    private String target;
+    @Enumerated(EnumType.STRING)
+    private AuditTargetType target;
 
     @Column(nullable = false)
     private String targetId;
@@ -29,7 +31,7 @@ public class AuditLog extends AuditableAbstractAggregateRoot<AuditLog> {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    public AuditLog(UUID userId, AuditAction action, String target, String targetId, String description) {
+    public AuditLog(UUID userId, AuditAction action, AuditTargetType target, String targetId, String description) {
         this.userId = userId;
         this.action = action;
         this.target = target;

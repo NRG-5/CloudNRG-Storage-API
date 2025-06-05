@@ -1,10 +1,10 @@
 package com.cloudnrg.api.auditlog.domain.services;
 
-import com.cloudnrg.api.auditlog.domain.model.aggregates.AuditLog;
-import com.cloudnrg.api.auditlog.domain.model.commands.RegisterAuditLogCommand;
-import com.cloudnrg.api.auditlog.domain.model.queries.GetAuditLogsByUserQuery;
 
-import java.util.List;
+import com.cloudnrg.api.auditlog.domain.model.commands.RegisterAuditLogCommand;
+
+
+
 
 public interface AuditLogCommandService {
     void handle(RegisterAuditLogCommand command);
