@@ -2,7 +2,5 @@ package com.cloudnrg.api.storage.domain.model.commands;
 
 import java.util.UUID;
 
-public record DeleteFolderCommand(UUID folderId) {
-
-
+public record UpdateFolderNameCommand(UUID folderId, String name) {
 }
