@@ -8,6 +8,7 @@ import java.util.Optional;
 public interface FolderCommandService {
     Optional<Folder> handle(CreateDefaultFolderCommand command);
     Optional<Folder> handle(CreateFolderCommand command);
-    Optional<Folder> handle(UpdateFolderNameComand command);
+    Optional<Folder> handle(UpdateFolderNameCommand command);
     Optional<Folder> handle(UpdateFolderParentCommand command);
+    void handle(DeleteFolderByIdCommand command);
 }

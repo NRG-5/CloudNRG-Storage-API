@@ -4,7 +4,12 @@ import com.cloudnrg.api.iam.infrastructure.persistance.jpa.repositories.UserRepo
 import com.cloudnrg.api.storage.domain.model.aggregates.CloudFile;
 import com.cloudnrg.api.storage.domain.model.commands.CreateFileCommand;
 import com.cloudnrg.api.storage.domain.model.commands.DeleteFileByIdCommand;
+import com.cloudnrg.api.storage.domain.model.commands.UpdateFileFolderCommand;
+import com.cloudnrg.api.storage.domain.model.commands.UpdateFileNameCommand;
 import com.cloudnrg.api.storage.domain.model.events.CreateFileEvent;
+import com.cloudnrg.api.storage.domain.model.events.DeleteFileEvent;
+import com.cloudnrg.api.storage.domain.model.events.UpdateFileNameEvent;
+import com.cloudnrg.api.storage.domain.model.events.UpdateFileParentFolderEvent;
 import com.cloudnrg.api.storage.domain.services.FileCommandService;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.CloudFileRepository;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.FolderRepository;
@@ -109,12 +114,66 @@ public class FileCommandServiceImpl implements FileCommandService {
         }
 
         try {
-
-
             // Delete the file record from the database
             cloudFileRepository.delete(file.get());
+
+            // Publish the delete event
+            eventPublisher.publishEvent(new DeleteFileEvent(file, file.get().getId()));
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete file: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public Optional<CloudFile> handle(UpdateFileFolderCommand command) {
+        var fileResult = cloudFileRepository.findById(command.fileId());
+
+        if (fileResult.isEmpty()) {
+            throw new RuntimeException("File not found");
+        }
+
+        var file = fileResult.get();
+        var oldFolder = file.getFolder();
+        var newFolderResult = folderRepository.findFolderById(command.folderId());
+
+        if (newFolderResult.isEmpty()) {
+            throw new RuntimeException("New folder not found");
+        }
+
+        var newFolder = newFolderResult.get();
+
+        file.setFolder(newFolder);
+
+        try {
+            cloudFileRepository.save(file);
+
+            // Publish an event after updating the file folder
+            eventPublisher.publishEvent(new UpdateFileParentFolderEvent(file, file.getId(), oldFolder.getId(), newFolder.getId()));
+            return Optional.of(file);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update file folder: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public Optional<CloudFile> handle(UpdateFileNameCommand command) {
+        var fileResult = cloudFileRepository.findById(command.fileId());
+
+        if (fileResult.isEmpty()) {
+            throw new RuntimeException("File not found");
+        }
+
+        var file = fileResult.get();
+        file.setFilename(command.name());
+
+        try {
+            cloudFileRepository.save(file);
+
+            // Publish an event after updating the file name
+            eventPublisher.publishEvent(new UpdateFileNameEvent(file, file.getId(), command.name()));
+            return Optional.of(file);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update file name: " + e.getMessage());
         }
     }
 }
