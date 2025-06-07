@@ -31,23 +31,6 @@ public class ObjectsHistoryController {
     private final ObjectHistoryCommandService commandService;
     private final ObjectHistoryQueryService queryService;
 
-    @PostMapping
-    @Operation(summary = "Create a new Object History", description = "Create a new Object History record with the provided details.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Object History created successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid request data"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
-    public ResponseEntity<ObjectHistoryResource> createObjectHistory(@RequestBody CreateObjectHistoryResource resource) {
-        var createObjectHistoryCommand = CreateObjectHistoryCommandFromResourceAssembler.toCommandFromResource(resource);
-        var objectHistory = commandService.handle(createObjectHistoryCommand);
-        if (objectHistory.isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
-        var objectHistoryResource = ObjectHistoryResourceFromEntityAssembler.toResourceFromEntity(objectHistory.get());
-        return new ResponseEntity<>(objectHistoryResource, HttpStatus.CREATED);
-    }
-
     @Operation(summary = "Get Object History by ID", description = "Retrieve an Object History record by its ID.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Object History found"),
@@ -88,6 +71,8 @@ public class ObjectsHistoryController {
     public ResponseEntity<List<ObjectHistoryResource>> getAllObjectsHistoryByFileId(@PathVariable UUID fileId) {
         var getAllObjectsHistoryQuery = new GetAllObjectsHistoryByFileIdQuery(fileId);
         var objectsHistory = queryService.handle(getAllObjectsHistoryQuery);
+
+        //TODO: hay posibilidad de que el archivo sea reciente y no tenga historial, en ese caso retornar un objeto vacio
         if (objectsHistory.isEmpty()) {
             return ResponseEntity.notFound().build();
         }

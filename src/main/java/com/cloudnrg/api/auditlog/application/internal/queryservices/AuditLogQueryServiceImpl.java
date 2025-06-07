@@ -25,6 +25,7 @@ public class AuditLogQueryServiceImpl implements AuditLogQueryService {
         return auditLogRepository.findByUserId(query.userId());
     }
 
+    //TODO: refactor into repository query method
     @Override
     public List<AuditLog> handle(GetAuditLogsByFiltersQuery query) {
 

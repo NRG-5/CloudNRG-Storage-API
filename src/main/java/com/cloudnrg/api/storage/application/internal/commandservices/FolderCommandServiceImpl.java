@@ -51,6 +51,7 @@ public class FolderCommandServiceImpl implements FolderCommandService {
         }
     }
 
+
     @Override
     public Optional<Folder> handle(CreateFolderCommand command) {
         var user = externalUserService.fetchUserById(command.userId());
@@ -82,6 +83,7 @@ public class FolderCommandServiceImpl implements FolderCommandService {
         }
     }
 
+
     @Override
     public Optional<Folder> handle(UpdateFolderNameCommand command) {
         var folderResult = folderRepository.findFolderById(command.folderId());
@@ -109,6 +111,7 @@ public class FolderCommandServiceImpl implements FolderCommandService {
             throw new RuntimeException("Failed to update folder name: " + e.getMessage());
         }
     }
+
 
     @Override
     public Optional<Folder> handle(UpdateFolderParentCommand command) {
@@ -141,6 +144,7 @@ public class FolderCommandServiceImpl implements FolderCommandService {
             throw new RuntimeException("Failed to update folder parent: " + e.getMessage());
         }
     }
+
 
     @Override
     public void handle(DeleteFolderByIdCommand command) {

@@ -27,6 +27,9 @@ public class FolderController {
         this.folderQueryService = folderQueryService;
     }
 
+
+
+    //TODO: refactorizar en obtener los archivos por un folderid y si este no es especificado obtener el del root folder
     //get root folder by user id
     @Operation(summary = "Get root folder by user id", description = "Get root folder by user id")
     @GetMapping(
@@ -58,6 +61,9 @@ public class FolderController {
     }
 
 
-
+    //TODO: implementar endpoint CreateFolder
+    //TODO: implementar el endpoint de actualizar el nombre del folder
+    //TODO: implmentar endpoint de actualizar el parent folder de un folder
+    //TODO: implementar el endpoint de eliminar un folder
 
 }

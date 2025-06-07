@@ -107,7 +107,6 @@ public class FileController {
             @ApiResponse(responseCode = "200", description = "File retrieved successfully"),
             @ApiResponse(responseCode = "404", description = "File not found")
     })
-
     public ResponseEntity<byte[]> getFileById(@PathVariable UUID fileId) {
 
         var getFileByIdQuery = new GetFileByIdQuery(fileId);
@@ -143,5 +142,8 @@ public class FileController {
     }
 
 
+    //TODO: implement endpoint UpdateFileName
+    //TODO: implement endpoint UpdateFileFolder
+    //TODO: implement endpoint DeleteFileById
 
 }

@@ -105,6 +105,7 @@ public class FileCommandServiceImpl implements FileCommandService {
         return Optional.of(file);
     }
 
+
     @Override
     public void handle(DeleteFileByIdCommand command) {
         var file = cloudFileRepository.findById(command.fileId());
@@ -123,6 +124,7 @@ public class FileCommandServiceImpl implements FileCommandService {
             throw new RuntimeException("Failed to delete file: " + e.getMessage());
         }
     }
+
 
     @Override
     public Optional<CloudFile> handle(UpdateFileFolderCommand command) {
@@ -154,6 +156,7 @@ public class FileCommandServiceImpl implements FileCommandService {
             throw new RuntimeException("Failed to update file folder: " + e.getMessage());
         }
     }
+
 
     @Override
     public Optional<CloudFile> handle(UpdateFileNameCommand command) {
