@@ -1,6 +1,7 @@
 package com.cloudnrg.api.history.infrastructure.persistence.jpa.repositories;
 
 import com.cloudnrg.api.history.domain.model.aggregates.ObjectHistory;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,4 +14,7 @@ public interface ObjectHistoryRepository extends JpaRepository<ObjectHistory, Lo
     Optional<ObjectHistory> findById(UUID id);
     List<ObjectHistory> findAllByUserId(UUID userId);
     List<ObjectHistory> findAllByFileId(UUID fileId);
+    List<ObjectHistory> findByFileIdOrderByCreatedAtDesc(UUID fileId, Pageable pageable);
+    Optional<ObjectHistory> findFirstByFileIdOrderByCreatedAtDesc(UUID fileId);
+    void deleteAllByFileId(UUID fileId);
 }
