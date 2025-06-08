@@ -1,8 +1,7 @@
 package com.cloudnrg.api.history.interfaces.rest;
 
-import com.cloudnrg.api.history.domain.model.queries.GetAllObjectsHistoryByFileIdQuery;
-import com.cloudnrg.api.history.domain.model.queries.GetAllObjectsHistoryByUserIdQuery;
-import com.cloudnrg.api.history.domain.model.queries.GetObjectHistoryByIdQuery;
+import com.cloudnrg.api.history.domain.model.commands.DeleteAllObjectsHistoryByFileIdCommand;
+import com.cloudnrg.api.history.domain.model.queries.*;
 import com.cloudnrg.api.history.domain.services.ObjectHistoryCommandService;
 import com.cloudnrg.api.history.domain.services.ObjectHistoryQueryService;
 import com.cloudnrg.api.history.interfaces.rest.resources.CreateObjectHistoryResource;
@@ -76,8 +75,9 @@ public class ObjectsHistoryController {
         var getAllObjectsHistoryQuery = new GetAllObjectsHistoryByUserIdQuery(userId);
         var objectsHistory = queryService.handle(getAllObjectsHistoryQuery);
         if (objectsHistory.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
+            return ResponseEntity.ok()
+                    .header("X-Info-Message", "No history found for this user. The object may be new.")
+                    .body(List.of());        }
         var objectsHistoryResources = objectsHistory.stream()
                 .map(ObjectHistoryResourceFromEntityAssembler::toResourceFromEntity)
                 .toList();
@@ -89,11 +89,73 @@ public class ObjectsHistoryController {
         var getAllObjectsHistoryQuery = new GetAllObjectsHistoryByFileIdQuery(fileId);
         var objectsHistory = queryService.handle(getAllObjectsHistoryQuery);
         if (objectsHistory.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
+            return ResponseEntity.ok()
+                    .header("X-Info-Message", "No history found for this file. The object may be new.")
+                    .body(List.of());        }
         var objectsHistoryResources = objectsHistory.stream()
                 .map(ObjectHistoryResourceFromEntityAssembler::toResourceFromEntity)
                 .toList();
         return ResponseEntity.ok(objectsHistoryResources);
+    }
+
+    @Operation(summary = "Get limited Object Histories by File ID", description = "Retrieve a limited number of Object History records for a specific File ID.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Object Histories found"),
+            @ApiResponse(responseCode = "404", description = "No Object Histories found for the File ID"),
+            @ApiResponse(responseCode = "400", description = "Invalid limit parameter"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/{fileId}/limited")
+    public ResponseEntity<List<ObjectHistoryResource>> getLimitedObjectsHistoryByFileId(@PathVariable UUID fileId, @RequestParam Integer limit) {
+        try {
+            if (limit <= 0) {
+                return ResponseEntity.badRequest().build();
+            }
+            var getLimitedObjectsHistoryByFileIdQuery = new GetLimitedObjectsHistoryByFileIdQuery(fileId, limit);
+            var objectsHistory = queryService.handle(getLimitedObjectsHistoryByFileIdQuery);
+            if (objectsHistory.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            var resources = objectsHistory.stream()
+                    .map(ObjectHistoryResourceFromEntityAssembler::toResourceFromEntity)
+                    .toList();
+            return ResponseEntity.ok(resources);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @Operation(summary = "Get the last Object History by File ID", description = "Returns the most recent Object History for a specific file.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Last Object History found"),
+            @ApiResponse(responseCode = "404", description = "No Object History found for the File ID"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/{fileId}/last")
+    public ResponseEntity<ObjectHistoryResource> getLastObjectHistoryByFileId(@PathVariable UUID fileId) {
+        var getLastObjectHistoryByFileIdQuery = new GetLastObjectHistoryByFileIdQuery(fileId);
+        var objectHistory = queryService.handle(getLastObjectHistoryByFileIdQuery);
+        if (objectHistory.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        var resource = ObjectHistoryResourceFromEntityAssembler.toResourceFromEntity(objectHistory.get());
+        return ResponseEntity.ok(resource);
+    }
+
+    @Operation(summary = "Delete all Object Histories by File ID", description = "Deletes all Object History records associated with a specific File ID.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "All Object Histories deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "No Object Histories found for the File ID"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @DeleteMapping("/{fileId}")
+    public ResponseEntity<?> deleteAllObjectsHistoryByFileId(@PathVariable UUID fileId) {
+        try {
+            var deleteAllObjectsHistoryByFileIdCommand = new DeleteAllObjectsHistoryByFileIdCommand(fileId);
+            commandService.handle(deleteAllObjectsHistoryByFileIdCommand);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
