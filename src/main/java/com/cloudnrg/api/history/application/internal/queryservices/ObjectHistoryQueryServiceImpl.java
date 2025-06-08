@@ -1,12 +1,11 @@
 package com.cloudnrg.api.history.application.internal.queryservices;
 
 import com.cloudnrg.api.history.domain.model.aggregates.ObjectHistory;
-import com.cloudnrg.api.history.domain.model.queries.GetAllObjectsHistoryByFileIdQuery;
-import com.cloudnrg.api.history.domain.model.queries.GetAllObjectsHistoryByUserIdQuery;
-import com.cloudnrg.api.history.domain.model.queries.GetObjectHistoryByIdQuery;
+import com.cloudnrg.api.history.domain.model.queries.*;
 import com.cloudnrg.api.history.domain.services.ObjectHistoryQueryService;
 import com.cloudnrg.api.history.infrastructure.persistence.jpa.repositories.ObjectHistoryRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -30,5 +29,15 @@ public class ObjectHistoryQueryServiceImpl implements ObjectHistoryQueryService 
     @Override
     public List<ObjectHistory> handle(GetAllObjectsHistoryByFileIdQuery query) {
         return repository.findAllByFileId(query.fileId());
+    }
+
+    @Override
+    public List<ObjectHistory> handle(GetLimitedObjectsHistoryByFileIdQuery query) {
+        return repository.findByFileIdOrderByCreatedAtDesc(query.fileId(), PageRequest.of(0, query.limit()));
+    }
+
+    @Override
+    public Optional<ObjectHistory> handle(GetLastObjectHistoryByFileIdQuery query) {
+        return repository.findFirstByFileIdOrderByCreatedAtDesc(query.fileId());
     }
 }
