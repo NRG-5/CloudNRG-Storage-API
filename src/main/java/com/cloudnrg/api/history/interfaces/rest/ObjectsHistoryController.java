@@ -84,6 +84,12 @@ public class ObjectsHistoryController {
         return ResponseEntity.ok(objectsHistoryResources);
     }
 
+    @Operation(summary = "Get all Object Histories by File ID", description = "Retrieve all Object History records associated with a specific File ID.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Object Histories found"),
+            @ApiResponse(responseCode = "404", description = "No Object Histories found for the File ID"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @GetMapping("/{fileId}")
     public ResponseEntity<List<ObjectHistoryResource>> getAllObjectsHistoryByFileId(@PathVariable UUID fileId) {
         var getAllObjectsHistoryQuery = new GetAllObjectsHistoryByFileIdQuery(fileId);

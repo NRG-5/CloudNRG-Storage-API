@@ -6,8 +6,8 @@ import com.cloudnrg.api.history.domain.model.commands.DeleteAllObjectsHistoryByF
 import com.cloudnrg.api.history.domain.services.ObjectHistoryCommandService;
 import com.cloudnrg.api.history.infrastructure.persistence.jpa.repositories.ObjectHistoryRepository;
 import com.cloudnrg.api.iam.infrastructure.persistance.jpa.repositories.UserRepository;
+import com.cloudnrg.api.storage.application.internal.outboundservices.acl.ExternalUserService;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.CloudFileRepository;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -15,6 +15,7 @@ import java.util.Optional;
 @Service
 public class ObjectHistoryCommandServiceImpl implements ObjectHistoryCommandService {
     private final ObjectHistoryRepository objectHistoryRepository;
+    private final ExternalUserService externalUserService;
 
     //TODO: change to external user service
     private final UserRepository userRepository;
@@ -31,18 +32,15 @@ public class ObjectHistoryCommandServiceImpl implements ObjectHistoryCommandServ
     @Override
     public Optional<ObjectHistory> handle(CreateObjectHistoryCommand command) {
         var file = cloudFileRepository.findById(command.fileId());
-        var user = userRepository.findUserById(command.userId());
+        var user = externalUserService.fetchUserById(command.userId());
 
         if (file.isEmpty()) {
             throw new RuntimeException("File not found");
         }
-        if (user.isEmpty()) {
-            throw new RuntimeException("User not found");
-        }
 
         var objectHistory = new ObjectHistory(
                 file.get(),
-                user.get(),
+                user,
                 command.action()
         );
 

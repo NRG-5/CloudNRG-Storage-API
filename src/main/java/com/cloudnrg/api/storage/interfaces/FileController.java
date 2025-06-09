@@ -141,9 +141,10 @@ public class FileController {
     @Operation(summary = "Delete file by ID", description = "Delete a file by its ID")
     @DeleteMapping(value = "/{fileId}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {
-            @ApiResponse( responseCode = "204", description = "File deleted successfully"),
-            @ApiResponse( responseCode = "404", description = "File not found"),
-            @ApiResponse( responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "204", description = "File deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "File not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     public ResponseEntity<?> deleteFileById(@PathVariable UUID fileId) {
         try {

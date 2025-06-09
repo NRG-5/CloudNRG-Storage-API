@@ -30,7 +30,6 @@ public class FolderController {
         this.folderQueryService = folderQueryService;
     }
 
-    //get root folder by user id
     @Operation(summary = "Get root folder by user id", description = "Get root folder by user id")
     @GetMapping(
             value = "/root",
@@ -64,7 +63,9 @@ public class FolderController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Folder created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Related resource not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @PostMapping
     public ResponseEntity<FolderResource> createFolder(@RequestBody CreateFolderCommand command) {
@@ -102,9 +103,10 @@ public class FolderController {
     @Operation(summary = "Update parent folder", description = "Updates the parent folder of a folder by its ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Parent folder updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Folder not found"),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Folder or parent not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @PutMapping("/{folderId}/parent")
     public ResponseEntity<FolderResource> updateParentFolder(
@@ -125,7 +127,8 @@ public class FolderController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Folder deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Folder not found"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "500", description = "Internal server error"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @DeleteMapping("/{folderId}")
     public ResponseEntity<Void> deleteFolder(@PathVariable UUID folderId) {
