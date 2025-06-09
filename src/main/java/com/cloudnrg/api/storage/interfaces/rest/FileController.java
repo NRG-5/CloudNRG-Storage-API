@@ -1,5 +1,6 @@
 package com.cloudnrg.api.storage.interfaces.rest;
 
+import com.cloudnrg.api.shared.interfaces.rest.MessageResource;
 import com.cloudnrg.api.storage.domain.model.commands.CreateFileCommand;
 import com.cloudnrg.api.storage.domain.model.commands.DeleteFileByIdCommand;
 import com.cloudnrg.api.storage.domain.model.commands.UpdateFileFolderCommand;
@@ -154,10 +155,10 @@ public class FileController {
             @ApiResponse(responseCode = "500", description = "Internal server error"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<?> deleteFileById(@PathVariable UUID fileId) {
+    public ResponseEntity<MessageResource> deleteFileById(@PathVariable UUID fileId) {
         try {
             fileCommandService.handle(new DeleteFileByIdCommand(fileId));
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.ok(new MessageResource("File deleted successfully"));
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
