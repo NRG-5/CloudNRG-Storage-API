@@ -8,6 +8,8 @@ import com.cloudnrg.api.storage.domain.services.FolderQueryService;
 import com.cloudnrg.api.storage.interfaces.resources.FolderResource;
 import com.cloudnrg.api.storage.interfaces.transform.FolderResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -61,7 +63,9 @@ public class FolderController {
 
     @Operation(summary = "Create folder", description = "Creates a new folder")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Folder created successfully"),
+            @ApiResponse(responseCode = "201", description = "Folder created successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = FolderResource.class))),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
             @ApiResponse(responseCode = "404", description = "Related resource not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error"),
@@ -102,7 +106,9 @@ public class FolderController {
 
     @Operation(summary = "Update parent folder", description = "Updates the parent folder of a folder by its ID")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Parent folder updated successfully"),
+            @ApiResponse(responseCode = "200", description = "Parent folder updated successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = FolderResource.class))),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
             @ApiResponse(responseCode = "404", description = "Folder or parent not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error"),
