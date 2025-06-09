@@ -33,7 +33,7 @@ public class ObjectHistoryQueryServiceImpl implements ObjectHistoryQueryService 
 
     @Override
     public List<ObjectHistory> handle(GetLimitedObjectsHistoryByFileIdQuery query) {
-        return repository.findByFile_IdOrderByCreatedAtDesc(query.fileId(), PageRequest.of(0, query.limit()));
+        return repository.findAllByFile_IdOrderByCreatedAtDesc(query.fileId(), PageRequest.of(0, query.limit()));
     }
 
     @Override

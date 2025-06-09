@@ -1,6 +1,7 @@
 package com.cloudnrg.api.history.infrastructure.persistence.jpa.repositories;
 
 import com.cloudnrg.api.history.domain.model.aggregates.ObjectHistory;
+import org.springframework.data.domain.Limit;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -12,13 +13,9 @@ import java.util.UUID;
 @Repository
 public interface ObjectHistoryRepository extends JpaRepository<ObjectHistory, UUID> {
     Optional<ObjectHistory> findById(UUID id);
-
     List<ObjectHistory> findAllByUser_Id(UUID userId);
     List<ObjectHistory> findAllByFile_Id(UUID fileId);
-
-    List<ObjectHistory> findByFile_IdOrderByCreatedAtDesc(UUID fileId, Pageable pageable);
-
     Optional<ObjectHistory> findFirstByFile_IdOrderByCreatedAtDesc(UUID fileId);
-
+    List<ObjectHistory> findAllByFile_IdOrderByCreatedAtDesc(UUID fileId, Pageable pageable);
     void deleteAllByFile_Id(UUID fileId);
 }
