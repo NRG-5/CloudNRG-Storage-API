@@ -163,4 +163,49 @@ public class FileController {
         }
     }
 
+
+    @Operation(summary = "Get file by ID", description = "Retrieve a file by its ID")
+    @GetMapping(value = "/{fileId}")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "File retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "File not found")
+    })
+    public ResponseEntity<byte[]> getFileById(@PathVariable UUID fileId) {
+
+        var getFileByIdQuery = new GetFileByIdQuery(fileId);
+
+        var fileOptional = fileQueryService.handle(getFileByIdQuery);
+
+        if (fileOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+
+        }
+
+
+        var file = fileOptional.get();
+        Path filePath = Paths.get(file.getPath());
+
+        // Check if file exists on disk
+        if (!Files.exists(filePath)) {
+            return ResponseEntity.notFound().build();
+
+        }
+
+        // Read file content
+        byte[] fileContent = null;
+        try {
+            fileContent = Files.readAllBytes(filePath);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+
+        }
+
+        // Set appropriate headers
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(file.getMimeType()))
+                .contentLength(file.getSize())
+                .header("Content-Disposition", "inline; filename=\"" + file.getFilename() + "\"")
+                .body(fileContent);
+    }
+
 }
