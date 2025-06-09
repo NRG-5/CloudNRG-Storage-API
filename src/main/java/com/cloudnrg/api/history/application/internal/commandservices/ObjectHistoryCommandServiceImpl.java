@@ -13,11 +13,20 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-@AllArgsConstructor
 public class ObjectHistoryCommandServiceImpl implements ObjectHistoryCommandService {
     private final ObjectHistoryRepository objectHistoryRepository;
+
+    //TODO: change to external user service
     private final UserRepository userRepository;
+
+    //TODO: change to external file service
     private final CloudFileRepository cloudFileRepository;
+
+    public ObjectHistoryCommandServiceImpl(ObjectHistoryRepository objectHistoryRepository, UserRepository userRepository, CloudFileRepository cloudFileRepository) {
+        this.objectHistoryRepository = objectHistoryRepository;
+        this.userRepository = userRepository;
+        this.cloudFileRepository = cloudFileRepository;
+    }
 
     @Override
     public Optional<ObjectHistory> handle(CreateObjectHistoryCommand command) {
@@ -53,7 +62,7 @@ public class ObjectHistoryCommandServiceImpl implements ObjectHistoryCommandServ
         }
 
         try {
-            objectHistoryRepository.deleteAllByFileId(command.fileId());
+            objectHistoryRepository.deleteAllByFile_Id(command.fileId());
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to delete object history: " + e.getMessage());
         }

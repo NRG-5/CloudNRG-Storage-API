@@ -10,11 +10,15 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface ObjectHistoryRepository extends JpaRepository<ObjectHistory, Long> {
+public interface ObjectHistoryRepository extends JpaRepository<ObjectHistory, UUID> {
     Optional<ObjectHistory> findById(UUID id);
-    List<ObjectHistory> findAllByUserId(UUID userId);
-    List<ObjectHistory> findAllByFileId(UUID fileId);
-    List<ObjectHistory> findByFileIdOrderByCreatedAtDesc(UUID fileId, Pageable pageable);
-    Optional<ObjectHistory> findFirstByFileIdOrderByCreatedAtDesc(UUID fileId);
-    void deleteAllByFileId(UUID fileId);
+
+    List<ObjectHistory> findAllByUser_Id(UUID userId);
+    List<ObjectHistory> findAllByFile_Id(UUID fileId);
+
+    List<ObjectHistory> findByFile_IdOrderByCreatedAtDesc(UUID fileId, Pageable pageable);
+
+    Optional<ObjectHistory> findFirstByFile_IdOrderByCreatedAtDesc(UUID fileId);
+
+    void deleteAllByFile_Id(UUID fileId);
 }

@@ -23,21 +23,21 @@ public class ObjectHistoryQueryServiceImpl implements ObjectHistoryQueryService 
 
     @Override
     public List<ObjectHistory> handle(GetAllObjectsHistoryByUserIdQuery query) {
-        return repository.findAllByUserId(query.userId());
+        return repository.findAllByUser_Id(query.userId());
     }
 
     @Override
     public List<ObjectHistory> handle(GetAllObjectsHistoryByFileIdQuery query) {
-        return repository.findAllByFileId(query.fileId());
+        return repository.findAllByFile_Id(query.fileId());
     }
 
     @Override
     public List<ObjectHistory> handle(GetLimitedObjectsHistoryByFileIdQuery query) {
-        return repository.findByFileIdOrderByCreatedAtDesc(query.fileId(), PageRequest.of(0, query.limit()));
+        return repository.findByFile_IdOrderByCreatedAtDesc(query.fileId(), PageRequest.of(0, query.limit()));
     }
 
     @Override
     public Optional<ObjectHistory> handle(GetLastObjectHistoryByFileIdQuery query) {
-        return repository.findFirstByFileIdOrderByCreatedAtDesc(query.fileId());
+        return repository.findFirstByFile_IdOrderByCreatedAtDesc(query.fileId());
     }
 }

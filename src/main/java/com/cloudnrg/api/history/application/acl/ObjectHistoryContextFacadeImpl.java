@@ -19,10 +19,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@AllArgsConstructor
 public class ObjectHistoryContextFacadeImpl implements ObjectHistoryContextFacade {
     private final ObjectHistoryCommandService commandService;
     private final ObjectHistoryQueryService queryService;
+
+    public ObjectHistoryContextFacadeImpl(ObjectHistoryCommandService commandService, ObjectHistoryQueryService queryService) {
+        this.commandService = commandService;
+        this.queryService = queryService;
+    }
 
     @Override
     public List<ObjectHistory> fetchAllObjectsHistoryByUserId(UUID userId) {
