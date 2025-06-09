@@ -1,5 +1,6 @@
 package com.cloudnrg.api.iam.application.internal.eventhandlers;
 
+import com.cloudnrg.api.iam.application.internal.outboundservices.acl.ExternalFolderService;
 import com.cloudnrg.api.iam.domain.model.events.UserCreationEvent;
 import com.cloudnrg.api.iam.domain.model.queries.GetUserByIdQuery;
 import com.cloudnrg.api.iam.domain.services.UserQueryService;
@@ -11,18 +12,18 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserCreationEventHandler {
 
-    private final FolderRepository folderRepository;
     private final UserQueryService userQueryService;
+    private final ExternalFolderService externalFolderService;
 
     public UserCreationEventHandler(
-            FolderRepository folderRepository,
-            UserQueryService userQueryService) {
-        this.folderRepository = folderRepository;
+            UserQueryService userQueryService,
+            ExternalFolderService externalFolderService
+    ) {
         this.userQueryService = userQueryService;
+        this.externalFolderService = externalFolderService;
     }
 
     //on user creation create a root folder for the user
-    //TODO: refactor folder creation as an outbound service
     @EventListener(UserCreationEvent.class)
     public void on(UserCreationEvent event) {
 
@@ -32,17 +33,8 @@ public class UserCreationEventHandler {
             throw new RuntimeException("User not found");
         }
 
-        var defaultFolder = new Folder(
-                "root",
-                null,
-                user.get()
-        );
-
-        try {
-            folderRepository.save(defaultFolder);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create root folder: " + e.getMessage());
-        }
+        //create root folder for user
+        var rootFolderId = externalFolderService.createRootFolderForUser(user.get().getId());
 
     }
 
