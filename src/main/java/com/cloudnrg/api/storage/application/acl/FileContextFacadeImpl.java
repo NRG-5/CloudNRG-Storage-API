@@ -39,7 +39,7 @@ public class FileContextFacadeImpl implements FileContextFacade {
     }
 
     @Override
-    public Optional<CloudFile> getFileById(UUID fileId) {
+    public Optional<CloudFile> fetchFileById(UUID fileId) {
         return fileQueryService.handle(new GetFileByIdQuery(fileId));
     }
 

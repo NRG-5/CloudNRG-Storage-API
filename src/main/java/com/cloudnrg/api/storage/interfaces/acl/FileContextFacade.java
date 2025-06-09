@@ -11,7 +11,7 @@ public interface FileContextFacade {
 
     UUID createFile(MultipartFile file, UUID userId, UUID folderId);
     void deleteFileById(UUID fileId);
-    Optional<CloudFile> getFileById(UUID fileId);
+    Optional<CloudFile> fetchFileById(UUID fileId);
     List<CloudFile> getFilesByFolderId(UUID folderId);
     void updateFileName(UUID fileId, String newName);
     void updateFileParentFolder(UUID fileId, UUID newFolderId);
