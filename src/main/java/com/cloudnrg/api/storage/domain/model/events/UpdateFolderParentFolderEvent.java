@@ -11,10 +11,16 @@ public class UpdateFolderParentFolderEvent extends ApplicationEvent {
     private UUID oldParentFolderId;
     private UUID newParentFolderId;
 
-    public UpdateFolderParentFolderEvent(Object source, UUID folderId, UUID oldParentFolderId, UUID newParentFolderId) {
+    private UUID userId;
+
+    public UpdateFolderParentFolderEvent(
+            Object source, UUID folderId,
+            UUID oldParentFolderId, UUID newParentFolderId,
+            UUID userId) {
         super(source);
         this.folderId = folderId;
         this.oldParentFolderId = oldParentFolderId;
         this.newParentFolderId = newParentFolderId;
+        this.userId = userId;
     }
 }

@@ -9,8 +9,11 @@ import java.util.UUID;
 public class DeleteFileEvent extends ApplicationEvent {
     private final UUID fileId;
 
-    public DeleteFileEvent(Object source, UUID fileId) {
+    private final UUID userId;
+
+    public DeleteFileEvent(Object source, UUID fileId, UUID userId) {
         super(source);
         this.fileId = fileId;
+        this.userId = userId;
     }
 }
