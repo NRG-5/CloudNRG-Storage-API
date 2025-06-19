@@ -25,9 +25,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.springframework.http.MediaType;
-import com.cloudnrg.api.storage.domain.model.queries.GetFileByIdQuery;
-
 import java.util.List;
 import java.util.UUID;
 
@@ -179,7 +176,6 @@ public class FileController {
 
         if (fileOptional.isEmpty()) {
             return ResponseEntity.notFound().build();
-
         }
 
 
@@ -189,7 +185,6 @@ public class FileController {
         // Check if file exists on disk
         if (!Files.exists(filePath)) {
             return ResponseEntity.notFound().build();
-
         }
 
         // Read file content
