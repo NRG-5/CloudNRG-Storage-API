@@ -5,10 +5,13 @@ import com.cloudnrg.api.storage.domain.model.commands.CreateFolderCommand;
 import com.cloudnrg.api.storage.domain.model.commands.DeleteFolderByIdCommand;
 import com.cloudnrg.api.storage.domain.model.commands.UpdateFolderNameCommand;
 import com.cloudnrg.api.storage.domain.model.commands.UpdateFolderParentCommand;
+import com.cloudnrg.api.storage.domain.model.queries.GetFolderHierarchyQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetRootFolderByUserIdQuery;
 import com.cloudnrg.api.storage.domain.services.FolderCommandService;
 import com.cloudnrg.api.storage.domain.services.FolderQueryService;
+import com.cloudnrg.api.storage.interfaces.rest.resources.FolderHierarchyResource;
 import com.cloudnrg.api.storage.interfaces.rest.resources.FolderResource;
+import com.cloudnrg.api.storage.interfaces.rest.transform.FolderHierarchyResourceFromEntityAssembler;
 import com.cloudnrg.api.storage.interfaces.rest.transform.FolderResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -149,5 +152,23 @@ public class FolderController {
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @Operation(summary = "Get folder hierarchy", description = "Retrieves the hierarchy of a folder by its ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Folder hierarchy retrieved successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = FolderHierarchyResource.class))),
+            @ApiResponse(responseCode = "404", description = "Folder not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/{folderId}/hierarchy")
+    public ResponseEntity<FolderHierarchyResource> getFolderHierarchy(@PathVariable UUID folderId) {
+        var hierarchyOpt = folderQueryService.handle(new GetFolderHierarchyQuery(folderId));
+        if (hierarchyOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        var resource = FolderHierarchyResourceFromEntityAssembler.toResourceFromHierarchy(hierarchyOpt.get());
+        return ResponseEntity.ok(resource);
     }
 }
