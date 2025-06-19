@@ -22,14 +22,17 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
-@CrossOrigin(origins = "*", methods = { RequestMethod.POST, RequestMethod.GET, RequestMethod.PUT, RequestMethod.DELETE })
 @RestController
 @RequestMapping(value = "/api/v1/history", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Objects History", description = "Objects History Management Endpoint")
-@AllArgsConstructor
 public class ObjectsHistoryController {
     private final ObjectHistoryCommandService commandService;
     private final ObjectHistoryQueryService queryService;
+
+    public ObjectsHistoryController(ObjectHistoryCommandService commandService, ObjectHistoryQueryService queryService) {
+        this.commandService = commandService;
+        this.queryService = queryService;
+    }
 
     @Operation(summary = "Get Object History by ID", description = "Retrieve an Object History record by its ID.")
     @ApiResponses(value = {
@@ -37,7 +40,7 @@ public class ObjectsHistoryController {
             @ApiResponse(responseCode = "404", description = "Object History not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @GetMapping("/{id}")
+    @GetMapping("/object-history/{id}")
     public ResponseEntity<ObjectHistoryResource> getObjectHistoryById(@PathVariable UUID id) {
         var getObjectHistoryByIdQuery = new GetObjectHistoryByIdQuery(id);
         var objectHistory = queryService.handle(getObjectHistoryByIdQuery);
@@ -54,7 +57,7 @@ public class ObjectsHistoryController {
             @ApiResponse(responseCode = "404", description = "No Object Histories found for the User ID"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @GetMapping("/{userId}")
+    @GetMapping("/user/{userId}")
     public ResponseEntity<List<ObjectHistoryResource>> getAllObjectsHistoryByUserId(@PathVariable UUID userId) {
         var getAllObjectsHistoryQuery = new GetAllObjectsHistoryByUserIdQuery(userId);
         var objectsHistory = queryService.handle(getAllObjectsHistoryQuery);
@@ -67,7 +70,7 @@ public class ObjectsHistoryController {
         return ResponseEntity.ok(objectsHistoryResources);
     }
 
-    @GetMapping("/{fileId}")
+    @GetMapping("/file/{fileId}")
     public ResponseEntity<List<ObjectHistoryResource>> getAllObjectsHistoryByFileId(@PathVariable UUID fileId) {
         var getAllObjectsHistoryQuery = new GetAllObjectsHistoryByFileIdQuery(fileId);
         var objectsHistory = queryService.handle(getAllObjectsHistoryQuery);
