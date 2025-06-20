@@ -9,6 +9,7 @@ import com.cloudnrg.api.history.interfaces.rest.resources.CreateObjectHistoryRes
 import com.cloudnrg.api.history.interfaces.rest.resources.ObjectHistoryResource;
 import com.cloudnrg.api.history.interfaces.rest.transform.CreateObjectHistoryCommandFromResourceAssembler;
 import com.cloudnrg.api.history.interfaces.rest.transform.ObjectHistoryResourceFromEntityAssembler;
+import com.cloudnrg.api.storage.application.internal.outboundservices.acl.ExternalUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -17,6 +18,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,6 +33,7 @@ import java.util.UUID;
 public class ObjectsHistoryController {
     private final ObjectHistoryCommandService commandService;
     private final ObjectHistoryQueryService queryService;
+    private final ExternalUserService externalUserService;
 
     @Operation(summary = "Get Object History by ID", description = "Retrieve an Object History record by its ID.")
     @ApiResponses(value = {
@@ -54,8 +58,15 @@ public class ObjectsHistoryController {
             @ApiResponse(responseCode = "404", description = "No Object Histories found for the User ID"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @GetMapping("/{userId}")
-    public ResponseEntity<List<ObjectHistoryResource>> getAllObjectsHistoryByUserId(@PathVariable UUID userId) {
+    @GetMapping("/user")
+    public ResponseEntity<List<ObjectHistoryResource>> getAllObjectsHistoryByUserId(@AuthenticationPrincipal UserDetails userDetails) {
+        var username = userDetails.getUsername();
+        var userId = externalUserService.fetchUserByUsername(username);
+
+        if (userId == null) {
+            return ResponseEntity.notFound().build();
+        }
+
         var getAllObjectsHistoryQuery = new GetAllObjectsHistoryByUserIdQuery(userId);
         var objectsHistory = queryService.handle(getAllObjectsHistoryQuery);
         if (objectsHistory.isEmpty()) {
@@ -78,10 +89,10 @@ public class ObjectsHistoryController {
         var getAllObjectsHistoryQuery = new GetAllObjectsHistoryByFileIdQuery(fileId);
         var objectsHistory = queryService.handle(getAllObjectsHistoryQuery);
 
-        //TODO: hay posibilidad de que el archivo sea reciente y no tenga historial, en ese caso retornar un objeto vacio
         if (objectsHistory.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
+
         var objectsHistoryResources = objectsHistory.stream()
                 .map(ObjectHistoryResourceFromEntityAssembler::toResourceFromEntity)
                 .toList();
