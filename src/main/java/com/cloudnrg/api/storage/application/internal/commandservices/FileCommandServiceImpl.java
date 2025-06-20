@@ -33,7 +33,7 @@ public class FileCommandServiceImpl implements FileCommandService {
     private final UserRepository userRepository;
     private final ExternalObjectHistoryService externalObjectHistoryService;
 
-    private static final String UPLOAD_DIR = "C:\\NRG\\";
+    private static final String UPLOAD_DIR = "D:\\Storage-CloudNRG\\";
 
     private final ApplicationEventPublisher eventPublisher;
 
