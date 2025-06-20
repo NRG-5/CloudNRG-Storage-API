@@ -1,6 +1,7 @@
 package com.cloudnrg.api.storage.interfaces.rest;
 
 
+import com.cloudnrg.api.storage.application.internal.outboundservices.acl.ExternalUserService;
 import com.cloudnrg.api.storage.domain.model.commands.CreateFolderCommand;
 import com.cloudnrg.api.storage.domain.model.commands.DeleteFolderByIdCommand;
 import com.cloudnrg.api.storage.domain.model.commands.UpdateFolderNameCommand;
@@ -21,6 +22,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -33,10 +36,12 @@ public class FolderController {
 
     private final FolderQueryService folderQueryService;
     private final FolderCommandService folderCommandService;
+    private final ExternalUserService externalUserService;
 
-    public FolderController(FolderQueryService folderQueryService, FolderCommandService folderCommandService) {
+    public FolderController(FolderQueryService folderQueryService, FolderCommandService folderCommandService, ExternalUserService externalUserService) {
         this.folderQueryService = folderQueryService;
         this.folderCommandService = folderCommandService;
+        this.externalUserService = externalUserService;
     }
 
     //TODO: refactorizar en obtener los archivos por un folderid y si este no es especificado obtener el del root folder
@@ -51,8 +56,14 @@ public class FolderController {
             @ApiResponse( responseCode = "401", description = "Unauthorized"),
     })
     public ResponseEntity<FolderResource> getRootFolderByUserId(
-            @RequestParam UUID userId
-    ) {
+            @AuthenticationPrincipal UserDetails userDetails
+            ) {
+        var username = userDetails.getUsername();
+        var userId = externalUserService.fetchUserByUsername(username);
+
+        if (userId == null) {
+            return ResponseEntity.notFound().build();
+        }
 
         var getRootFolderByUserIdQuery = new GetRootFolderByUserIdQuery(
                 userId
