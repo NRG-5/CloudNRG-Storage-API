@@ -1,6 +1,7 @@
 package com.cloudnrg.api.storage.application.internal.commandservices;
 
 import com.cloudnrg.api.iam.infrastructure.persistance.jpa.repositories.UserRepository;
+import com.cloudnrg.api.storage.application.internal.outboundservices.acl.ExternalObjectHistoryService;
 import com.cloudnrg.api.storage.domain.model.aggregates.CloudFile;
 import com.cloudnrg.api.storage.domain.model.commands.CreateFileCommand;
 import com.cloudnrg.api.storage.domain.model.commands.DeleteFileByIdCommand;
@@ -30,18 +31,20 @@ public class FileCommandServiceImpl implements FileCommandService {
     private final CloudFileRepository cloudFileRepository;
     private final FolderRepository folderRepository;
     private final UserRepository userRepository;
+    private final ExternalObjectHistoryService externalObjectHistoryService;
 
-    private static final String UPLOAD_DIR = "C:\\Users\\Neo\\Documents\\provisional-storage\\";
+    private static final String UPLOAD_DIR = "C:\\NRG\\";
 
     private final ApplicationEventPublisher eventPublisher;
 
     public FileCommandServiceImpl(CloudFileRepository cloudFileRepository,
-                                 FolderRepository folderRepository,
-                                 UserRepository userRepository,
-                                 ApplicationEventPublisher eventPublisher) {
+                                  FolderRepository folderRepository,
+                                  UserRepository userRepository, ExternalObjectHistoryService externalObjectHistoryService,
+                                  ApplicationEventPublisher eventPublisher) {
         this.cloudFileRepository = cloudFileRepository;
         this.folderRepository = folderRepository;
         this.userRepository = userRepository;
+        this.externalObjectHistoryService = externalObjectHistoryService;
         this.eventPublisher = eventPublisher;
     }
 
@@ -97,7 +100,7 @@ public class FileCommandServiceImpl implements FileCommandService {
 
             // Publish the event after saving the file
             eventPublisher.publishEvent(new CreateFileEvent(file, file.getId(), user.get().getId()));
-
+            externalObjectHistoryService.saveObjectHistoryCreateFile(file.getId(), user.get().getId());
         } catch (Exception e) {
             throw new IllegalArgumentException("Error while saving: " + e.getMessage());
         }
@@ -120,6 +123,8 @@ public class FileCommandServiceImpl implements FileCommandService {
 
             // Publish the delete event
             eventPublisher.publishEvent(new DeleteFileEvent(file, file.get().getId()));
+
+            externalObjectHistoryService.deleteAllObjectsHistoryByFileId(file.get().getId());
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete file: " + e.getMessage());
         }
@@ -151,6 +156,8 @@ public class FileCommandServiceImpl implements FileCommandService {
 
             // Publish an event after updating the file folder
             eventPublisher.publishEvent(new UpdateFileParentFolderEvent(file, file.getId(), oldFolder.getId(), newFolder.getId()));
+
+            externalObjectHistoryService.saveObjectHistoryUpdateFileParentFolder(file.getId(), file.getUser().getId(), newFolder.getId());
             return Optional.of(file);
         } catch (Exception e) {
             throw new RuntimeException("Failed to update file folder: " + e.getMessage());
@@ -174,6 +181,7 @@ public class FileCommandServiceImpl implements FileCommandService {
 
             // Publish an event after updating the file name
             eventPublisher.publishEvent(new UpdateFileNameEvent(file, file.getId(), command.name()));
+            externalObjectHistoryService.saveObjectHistoryUpdateFileName(file.getId(), file.getUser().getId(), command.name());
             return Optional.of(file);
         } catch (Exception e) {
             throw new RuntimeException("Failed to update file name: " + e.getMessage());
