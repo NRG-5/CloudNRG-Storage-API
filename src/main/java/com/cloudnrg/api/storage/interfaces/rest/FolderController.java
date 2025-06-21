@@ -1,10 +1,7 @@
 package com.cloudnrg.api.storage.interfaces.rest;
 
 import com.cloudnrg.api.storage.application.internal.outboundservices.acl.ExternalUserService;
-import com.cloudnrg.api.storage.domain.model.commands.CreateFolderCommand;
-import com.cloudnrg.api.storage.domain.model.commands.DeleteFolderByIdCommand;
-import com.cloudnrg.api.storage.domain.model.commands.UpdateFolderNameCommand;
-import com.cloudnrg.api.storage.domain.model.commands.UpdateFolderParentCommand;
+import com.cloudnrg.api.storage.domain.model.commands.*;
 import com.cloudnrg.api.storage.domain.model.queries.GetFolderHierarchyQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetRootFolderByUserIdQuery;
 import com.cloudnrg.api.storage.domain.services.FolderCommandService;
@@ -72,10 +69,10 @@ public class FolderController {
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @PostMapping
-    public ResponseEntity<FolderResource> createFolder(@RequestBody CreateFolderCommand body,
+    public ResponseEntity<FolderResource> createFolder(@RequestBody CreateFolderRequest body,
                                                        @AuthenticationPrincipal UserDetails userDetails) {
         var userId = externalUserService.fetchUserByUsername(userDetails.getUsername());
-        var command = new CreateFolderCommand(userId, body.name(), body.parentId());
+        var command = new CreateFolderCommand(userId, body.folderName(), body.parentFolderId());
         var folder = folderCommandService.handle(command);
         if (folder.isEmpty()) return ResponseEntity.badRequest().build();
         var resource = FolderResourceFromEntityAssembler.toResourceFromEntity(folder.get());
@@ -113,10 +110,10 @@ public class FolderController {
     })
     @PutMapping("/{folderId}/parent")
     public ResponseEntity<FolderResource> updateParentFolder(@PathVariable UUID folderId,
-                                                             @RequestParam UUID parentId,
+                                                             @RequestParam UUID parentFolderId,
                                                              @AuthenticationPrincipal UserDetails userDetails) {
         var userId = externalUserService.fetchUserByUsername(userDetails.getUsername());
-        var command = new UpdateFolderParentCommand(folderId, parentId, userId);
+        var command = new UpdateFolderParentCommand(folderId, parentFolderId, userId);
         var folder = folderCommandService.handle(command);
         if (folder.isEmpty()) return ResponseEntity.notFound().build();
         var resource = FolderResourceFromEntityAssembler.toResourceFromEntity(folder.get());
