@@ -10,6 +10,7 @@ import com.cloudnrg.api.storage.domain.model.queries.GetFileByIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFilesByFolderIdQuery;
 import com.cloudnrg.api.storage.domain.services.FileCommandService;
 import com.cloudnrg.api.storage.domain.services.FileQueryService;
+import com.cloudnrg.api.storage.interfaces.rest.resources.BatchUpdateFileParentFolderResource;
 import com.cloudnrg.api.storage.interfaces.rest.resources.FileResource;
 import com.cloudnrg.api.storage.interfaces.rest.transform.FileResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @CrossOrigin(origins = "*", methods = { RequestMethod.POST, RequestMethod.GET, RequestMethod.PUT, RequestMethod.DELETE })
@@ -214,5 +216,19 @@ public class FileController {
                 .header("Content-Disposition", "inline; filename=\"" + file.getFilename() + "\"")
                 .body(fileContent);
     }
-
+    @Operation(summary = "Batch update file folders", description = "Update the parent folder of multiple files")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Files updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @PutMapping("/batch/update_parent_folder")
+    public ResponseEntity<List<FileResource>> batchUpdateFileFolders(@RequestBody BatchUpdateFileParentFolderResource resource) {
+        var updatedFiles = resource.fileIds().stream()
+                .map(id -> fileCommandService.handle(new UpdateFileFolderCommand(id, resource.newParentFolderId())))
+                .filter(Optional::isPresent)
+                .map(opt -> FileResourceFromEntityAssembler.toResourceFromEntity(opt.get(), "ok"))
+                .toList();
+        return ResponseEntity.ok(updatedFiles);
+    }
 }
