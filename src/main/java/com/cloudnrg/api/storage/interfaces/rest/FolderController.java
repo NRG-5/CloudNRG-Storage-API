@@ -1,6 +1,7 @@
 package com.cloudnrg.api.storage.interfaces.rest;
 
 
+import com.cloudnrg.api.shared.interfaces.rest.MessageResource;
 import com.cloudnrg.api.storage.application.internal.outboundservices.acl.ExternalUserService;
 import com.cloudnrg.api.storage.domain.model.commands.CreateFolderCommand;
 import com.cloudnrg.api.storage.domain.model.commands.DeleteFolderByIdCommand;
@@ -12,9 +13,7 @@ import com.cloudnrg.api.storage.domain.model.queries.GetRootFolderByUserIdQuery;
 import com.cloudnrg.api.storage.domain.services.FolderCommandService;
 import com.cloudnrg.api.storage.domain.services.FolderQueryService;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.FolderRepository;
-import com.cloudnrg.api.storage.interfaces.rest.resources.FolderAscendantHierarchyResource;
-import com.cloudnrg.api.storage.interfaces.rest.resources.FolderDescendantHierarchyResource;
-import com.cloudnrg.api.storage.interfaces.rest.resources.FolderResource;
+import com.cloudnrg.api.storage.interfaces.rest.resources.*;
 import com.cloudnrg.api.storage.interfaces.rest.transform.FolderAscendantHierarchyResourceFromEntityAssembler;
 import com.cloudnrg.api.storage.interfaces.rest.transform.FolderDescendantHierarchyResourceFromEntityAssembler;
 import com.cloudnrg.api.storage.interfaces.rest.transform.FolderResourceFromEntityAssembler;
@@ -24,12 +23,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @CrossOrigin(origins = "*", methods = { RequestMethod.POST, RequestMethod.GET, RequestMethod.PUT, RequestMethod.DELETE })
@@ -87,24 +89,41 @@ public class FolderController {
     }
 
     @Operation(summary = "Create folder", description = "Creates a new folder")
+    @PostMapping(
+            value = "/create",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Folder created successfully",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = FolderResource.class))),
+            @ApiResponse(responseCode = "201", description = "Folder created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
-            @ApiResponse(responseCode = "404", description = "Related resource not found"),
-            @ApiResponse(responseCode = "500", description = "Internal server error"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
     })
-    @PostMapping
-    public ResponseEntity<FolderResource> createFolder(@RequestBody CreateFolderCommand command) {
-        try {
-            var folder = folderCommandService.handle(command);
-            var resource = FolderResourceFromEntityAssembler.toResourceFromEntity(folder.get());
-            return ResponseEntity.status(201).body(resource);
-        } catch (Exception e) {
+    public ResponseEntity<FolderResource> createFolder(
+            @RequestParam("folderName") String folderName,
+            @RequestParam("parentFolderId") UUID parentFolderId,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        var username = userDetails.getUsername();
+        var userId = externalUserService.fetchUserByUsername(username);
+
+        if (userId == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        var command = new CreateFolderCommand(
+                userId,
+                folderName,
+                parentFolderId
+        );
+
+        var folder = folderCommandService.handle(command);
+
+        if (folder.isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
+
+        var resource = FolderResourceFromEntityAssembler.toResourceFromEntity(folder.get());
+        return new ResponseEntity<>(resource, HttpStatus.CREATED);
     }
 
     @Operation(summary = "Update folder name", description = "Updates the name of a folder by its ID")
@@ -162,12 +181,12 @@ public class FolderController {
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @DeleteMapping("/{folderId}")
-    public ResponseEntity<Void> deleteFolder(@PathVariable UUID folderId) {
+    public ResponseEntity<?> deleteFolder(@PathVariable UUID folderId) {
         try {
             folderCommandService.handle(new DeleteFolderByIdCommand(folderId));
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.ok(new MessageResource("Folder deleted successfully"));
         } catch (Exception e) {
-            return ResponseEntity.notFound().build();
+            throw new RuntimeException("Error deleting folder: " + e.getMessage());
         }
     }
 
@@ -198,5 +217,29 @@ public class FolderController {
         var assembler = new FolderDescendantHierarchyResourceFromEntityAssembler(repository);
         var resource = assembler.toResourceFromEntity(folderResult.get());
         return ResponseEntity.ok(resource);
+    }
+
+    @Operation(summary = "Batch update parent folder", description = "Updates the parent folder for multiple folders")
+    @PutMapping("/batch/update_parent_folder")
+    public ResponseEntity<List<FolderResource>> batchUpdateParentFolder(@RequestBody BatchUpdateFolderParentResource resource) {
+        var updatedFolders = resource.folderIds().stream()
+                .map(id -> folderCommandService.handle(new UpdateFolderParentCommand(id, resource.newParentFolderId())))
+                .filter(Optional::isPresent)
+                .map(opt -> FolderResourceFromEntityAssembler.toResourceFromEntity(opt.get()))
+                .toList();
+        return ResponseEntity.ok(updatedFolders);
+    }
+
+    @Operation(summary = "Batch delete folders", description = "Deletes multiple folders by their IDs")
+    @DeleteMapping("/batch")
+    public ResponseEntity<MessageResource> batchDeleteFolders(@RequestBody BatchDeleteFoldersResource resource) {
+        resource.folderIds().forEach(id -> {
+            try {
+                folderCommandService.handle(new DeleteFolderByIdCommand(id));
+            } catch (Exception e) {
+                throw new RuntimeException("Error deleting folder with ID " + id + ": " + e.getMessage());
+            }
+        });
+        return ResponseEntity.ok(new MessageResource("Folders deleted successfully"));
     }
 }

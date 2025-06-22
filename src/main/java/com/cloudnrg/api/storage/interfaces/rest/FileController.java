@@ -10,6 +10,7 @@ import com.cloudnrg.api.storage.domain.model.queries.GetFileByIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFilesByFolderIdQuery;
 import com.cloudnrg.api.storage.domain.services.FileCommandService;
 import com.cloudnrg.api.storage.domain.services.FileQueryService;
+import com.cloudnrg.api.storage.interfaces.rest.resources.BatchDeleteFilesResource;
 import com.cloudnrg.api.storage.interfaces.rest.resources.BatchUpdateFileParentFolderResource;
 import com.cloudnrg.api.storage.interfaces.rest.resources.FileResource;
 import com.cloudnrg.api.storage.interfaces.rest.transform.FileResourceFromEntityAssembler;
@@ -165,12 +166,12 @@ public class FileController {
             @ApiResponse(responseCode = "500", description = "Internal server error"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<MessageResource> deleteFileById(@PathVariable UUID fileId) {
+    public ResponseEntity<?> deleteFileById(@PathVariable UUID fileId) {
         try {
             fileCommandService.handle(new DeleteFileByIdCommand(fileId));
             return ResponseEntity.ok(new MessageResource("File deleted successfully"));
         } catch (Exception e) {
-            return ResponseEntity.notFound().build();
+            throw new RuntimeException("Error deleting file: " + e.getMessage());
         }
     }
 
@@ -230,5 +231,18 @@ public class FileController {
                 .map(opt -> FileResourceFromEntityAssembler.toResourceFromEntity(opt.get(), "ok"))
                 .toList();
         return ResponseEntity.ok(updatedFiles);
+    }
+
+    @Operation(summary = "Batch delete files", description = "Delete multiple files by their IDs")
+    @DeleteMapping("/batch")
+    public ResponseEntity<MessageResource> batchDeleteFiles(@RequestBody BatchDeleteFilesResource resource) {
+        resource.fileIds().forEach(fileId -> {
+            try {
+                fileCommandService.handle(new DeleteFileByIdCommand(fileId));
+            } catch (Exception e) {
+                throw new RuntimeException("Error deleting file with ID " + fileId + ": " + e.getMessage());
+            }
+        });
+        return ResponseEntity.ok(new MessageResource("Files deleted successfully"));
     }
 }
