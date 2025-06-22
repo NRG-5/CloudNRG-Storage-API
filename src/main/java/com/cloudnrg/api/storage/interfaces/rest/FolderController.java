@@ -6,13 +6,17 @@ import com.cloudnrg.api.storage.domain.model.commands.CreateFolderCommand;
 import com.cloudnrg.api.storage.domain.model.commands.DeleteFolderByIdCommand;
 import com.cloudnrg.api.storage.domain.model.commands.UpdateFolderNameCommand;
 import com.cloudnrg.api.storage.domain.model.commands.UpdateFolderParentCommand;
-import com.cloudnrg.api.storage.domain.model.queries.GetFolderHierarchyQuery;
+import com.cloudnrg.api.storage.domain.model.queries.GetFolderAscendantHierarchyQuery;
+import com.cloudnrg.api.storage.domain.model.queries.GetFolderDescendantHierarchyQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetRootFolderByUserIdQuery;
 import com.cloudnrg.api.storage.domain.services.FolderCommandService;
 import com.cloudnrg.api.storage.domain.services.FolderQueryService;
-import com.cloudnrg.api.storage.interfaces.rest.resources.FolderHierarchyResource;
+import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.FolderRepository;
+import com.cloudnrg.api.storage.interfaces.rest.resources.FolderAscendantHierarchyResource;
+import com.cloudnrg.api.storage.interfaces.rest.resources.FolderDescendantHierarchyResource;
 import com.cloudnrg.api.storage.interfaces.rest.resources.FolderResource;
-import com.cloudnrg.api.storage.interfaces.rest.transform.FolderHierarchyResourceFromEntityAssembler;
+import com.cloudnrg.api.storage.interfaces.rest.transform.FolderAscendantHierarchyResourceFromEntityAssembler;
+import com.cloudnrg.api.storage.interfaces.rest.transform.FolderDescendantHierarchyResourceFromEntityAssembler;
 import com.cloudnrg.api.storage.interfaces.rest.transform.FolderResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -36,11 +40,13 @@ public class FolderController {
 
     private final FolderQueryService folderQueryService;
     private final FolderCommandService folderCommandService;
+    private final FolderRepository repository;
     private final ExternalUserService externalUserService;
 
-    public FolderController(FolderQueryService folderQueryService, FolderCommandService folderCommandService, ExternalUserService externalUserService) {
+    public FolderController(FolderQueryService folderQueryService, FolderCommandService folderCommandService, FolderRepository repository, ExternalUserService externalUserService) {
         this.folderQueryService = folderQueryService;
         this.folderCommandService = folderCommandService;
+        this.repository = repository;
         this.externalUserService = externalUserService;
     }
 
@@ -165,21 +171,32 @@ public class FolderController {
         }
     }
 
-    @Operation(summary = "Get folder hierarchy", description = "Retrieves the hierarchy of a folder by its ID")
+    @Operation(summary = "Get folder ascendant hierarchy", description = "Retrieves the ascendant hierarchy of a folder by its ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Folder hierarchy retrieved successfully",
                     content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = FolderHierarchyResource.class))),
+                            schema = @Schema(implementation = FolderAscendantHierarchyResource.class))),
             @ApiResponse(responseCode = "404", description = "Folder not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping("/{folderId}/hierarchy")
-    public ResponseEntity<FolderHierarchyResource> getFolderHierarchy(@PathVariable UUID folderId) {
-        var hierarchyOpt = folderQueryService.handle(new GetFolderHierarchyQuery(folderId));
-        if (hierarchyOpt.isEmpty()) return ResponseEntity.notFound().build();
+    @GetMapping("/{folderId}/ascendant_hierarchy")
+    public ResponseEntity<FolderAscendantHierarchyResource> getFolderAscendantHierarchy(@PathVariable UUID folderId) {
+        var hierarchyResult = folderQueryService.handle(new GetFolderAscendantHierarchyQuery(folderId));
+        if (hierarchyResult.isEmpty()) return ResponseEntity.notFound().build();
 
-        var resource = FolderHierarchyResourceFromEntityAssembler.toResourceFromHierarchy(hierarchyOpt.get());
+        var resource = FolderAscendantHierarchyResourceFromEntityAssembler.toResourceFromHierarchy(hierarchyResult.get());
+        return ResponseEntity.ok(resource);
+    }
+
+    @Operation(summary = "Get folder hierarchy for folder root", description = "Retrieves the descendant hierarchy of a root folder by its ID")
+    @GetMapping("/{folderId}/root_hierarchy")
+    public ResponseEntity<FolderDescendantHierarchyResource> getFolderDescendantHierarchy(@PathVariable UUID folderId) {
+        var folderResult = folderQueryService.handle(new GetFolderDescendantHierarchyQuery(folderId));
+        if (folderResult.isEmpty()) return ResponseEntity.notFound().build();
+
+        var assembler = new FolderDescendantHierarchyResourceFromEntityAssembler(repository);
+        var resource = assembler.toResourceFromEntity(folderResult.get());
         return ResponseEntity.ok(resource);
     }
 }
