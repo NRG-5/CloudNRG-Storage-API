@@ -118,15 +118,15 @@ public class FileCommandServiceImpl implements FileCommandService {
         }
 
         try {
+            externalObjectHistoryService.deleteAllObjectsHistoryByFileId(file.get().getId());
             // Delete the file record from the database
             cloudFileRepository.delete(file.get());
 
             // Publish the delete event
             eventPublisher.publishEvent(new DeleteFileEvent(file, file.get().getId()));
 
-            externalObjectHistoryService.deleteAllObjectsHistoryByFileId(file.get().getId());
         } catch (Exception e) {
-            throw new RuntimeException("Failed to delete file: " + e.getMessage());
+            throw new RuntimeException("Error deleting file: " + e.getMessage());
         }
     }
 
