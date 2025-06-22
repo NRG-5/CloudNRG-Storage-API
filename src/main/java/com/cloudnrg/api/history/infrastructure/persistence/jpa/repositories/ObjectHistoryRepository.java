@@ -16,5 +16,4 @@ public interface ObjectHistoryRepository extends JpaRepository<ObjectHistory, UU
 
     void deleteAllByFile_Id(UUID fileId);
 
-    Object findObjectHistoryByFile_IdAndUser_Id(UUID fileId, UUID userId);
 }

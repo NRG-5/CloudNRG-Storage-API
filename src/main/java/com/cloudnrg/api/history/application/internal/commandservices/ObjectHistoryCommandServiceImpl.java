@@ -9,6 +9,7 @@ import com.cloudnrg.api.history.infrastructure.persistence.jpa.repositories.Obje
 import com.cloudnrg.api.iam.infrastructure.persistance.jpa.repositories.UserRepository;
 import com.cloudnrg.api.storage.application.internal.outboundservices.acl.ExternalUserService;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.CloudFileRepository;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -49,13 +50,12 @@ public class ObjectHistoryCommandServiceImpl implements ObjectHistoryCommandServ
     }
 
     @Override
+    @Transactional
     public void handle(DeleteAllObjectsHistoryByFileIdCommand command) {
         var file = externalFileService.fetchFileById(command.fileId());
 
-        var existingHistory = objectHistoryRepository.findObjectHistoryByFile_IdAndUser_Id(file.getId(), file.getUser().getId());
-
-        if (existingHistory == null) {
-            throw new IllegalArgumentException("No object history found for file ID: " + command.fileId());
+        if (file == null) {
+            throw new IllegalArgumentException("File with ID " + command.fileId() + " does not exist.");
         }
 
         try {
