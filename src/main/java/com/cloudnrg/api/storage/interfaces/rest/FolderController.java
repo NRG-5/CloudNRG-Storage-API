@@ -1,18 +1,37 @@
 package com.cloudnrg.api.storage.interfaces.rest;
 
 
+import com.cloudnrg.api.shared.interfaces.rest.MessageResource;
+import com.cloudnrg.api.storage.application.internal.outboundservices.acl.ExternalUserService;
+import com.cloudnrg.api.storage.domain.model.commands.CreateFolderCommand;
+import com.cloudnrg.api.storage.domain.model.commands.DeleteFolderByIdCommand;
+import com.cloudnrg.api.storage.domain.model.commands.UpdateFolderNameCommand;
+import com.cloudnrg.api.storage.domain.model.commands.UpdateFolderParentCommand;
+import com.cloudnrg.api.storage.domain.model.queries.GetFolderAscendantHierarchyQuery;
+import com.cloudnrg.api.storage.domain.model.queries.GetFolderDescendantHierarchyQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetRootFolderByUserIdQuery;
+import com.cloudnrg.api.storage.domain.services.FolderCommandService;
 import com.cloudnrg.api.storage.domain.services.FolderQueryService;
-import com.cloudnrg.api.storage.interfaces.rest.resources.FolderResource;
+import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.FolderRepository;
+import com.cloudnrg.api.storage.interfaces.rest.resources.*;
+import com.cloudnrg.api.storage.interfaces.rest.transform.FolderAscendantHierarchyResourceFromEntityAssembler;
+import com.cloudnrg.api.storage.interfaces.rest.transform.FolderDescendantHierarchyResourceFromEntityAssembler;
 import com.cloudnrg.api.storage.interfaces.rest.transform.FolderResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @CrossOrigin(origins = "*", methods = { RequestMethod.POST, RequestMethod.GET, RequestMethod.PUT, RequestMethod.DELETE })
@@ -22,15 +41,18 @@ import java.util.UUID;
 public class FolderController {
 
     private final FolderQueryService folderQueryService;
+    private final FolderCommandService folderCommandService;
+    private final FolderRepository repository;
+    private final ExternalUserService externalUserService;
 
-    public FolderController(FolderQueryService folderQueryService) {
+    public FolderController(FolderQueryService folderQueryService, FolderCommandService folderCommandService, FolderRepository repository, ExternalUserService externalUserService) {
         this.folderQueryService = folderQueryService;
+        this.folderCommandService = folderCommandService;
+        this.repository = repository;
+        this.externalUserService = externalUserService;
     }
 
-
-
     //TODO: refactorizar en obtener los archivos por un folderid y si este no es especificado obtener el del root folder
-    //get root folder by user id
     @Operation(summary = "Get root folder by user id", description = "Get root folder by user id")
     @GetMapping(
             value = "/root",
@@ -42,8 +64,14 @@ public class FolderController {
             @ApiResponse( responseCode = "401", description = "Unauthorized"),
     })
     public ResponseEntity<FolderResource> getRootFolderByUserId(
-            @RequestParam UUID userId
-    ) {
+            @AuthenticationPrincipal UserDetails userDetails
+            ) {
+        var username = userDetails.getUsername();
+        var userId = externalUserService.fetchUserByUsername(username);
+
+        if (userId == null) {
+            return ResponseEntity.notFound().build();
+        }
 
         var getRootFolderByUserIdQuery = new GetRootFolderByUserIdQuery(
                 userId
@@ -60,10 +88,158 @@ public class FolderController {
         return ResponseEntity.ok(folderResource);
     }
 
+    @Operation(summary = "Create folder", description = "Creates a new folder")
+    @PostMapping(
+            value = "/create",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Folder created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+    })
+    public ResponseEntity<FolderResource> createFolder(
+            @RequestParam("folderName") String folderName,
+            @RequestParam("parentFolderId") UUID parentFolderId,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        var username = userDetails.getUsername();
+        var userId = externalUserService.fetchUserByUsername(username);
 
-    //TODO: implementar endpoint CreateFolder
-    //TODO: implementar el endpoint de actualizar el nombre del folder
-    //TODO: implmentar endpoint de actualizar el parent folder de un folder
-    //TODO: implementar el endpoint de eliminar un folder
+        if (userId == null) {
+            return ResponseEntity.notFound().build();
+        }
 
+        var command = new CreateFolderCommand(
+                userId,
+                folderName,
+                parentFolderId
+        );
+
+        var folder = folderCommandService.handle(command);
+
+        if (folder.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        var resource = FolderResourceFromEntityAssembler.toResourceFromEntity(folder.get());
+        return new ResponseEntity<>(resource, HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "Update folder name", description = "Updates the name of a folder by its ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Folder name updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Folder not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+    })
+    @PutMapping("/{folderId}/name")
+    public ResponseEntity<FolderResource> updateFolderName(
+            @PathVariable UUID folderId,
+            @RequestParam String name) {
+        try {
+            var command = new UpdateFolderNameCommand(folderId, name);
+            var folder = folderCommandService.handle(command);
+            if (folder.isEmpty()) return ResponseEntity.notFound().build();
+            var resource = FolderResourceFromEntityAssembler.toResourceFromEntity(folder.get());
+            return ResponseEntity.ok(resource);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @Operation(summary = "Update parent folder", description = "Updates the parent folder of a folder by its ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Parent folder updated successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = FolderResource.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "404", description = "Folder or parent not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @PutMapping("/{folderId}/parent")
+    public ResponseEntity<FolderResource> updateParentFolder(
+            @PathVariable UUID folderId,
+            @RequestParam UUID parentId) {
+        try {
+            var command = new UpdateFolderParentCommand(folderId, parentId);
+            var folder = folderCommandService.handle(command);
+            if (folder.isEmpty()) return ResponseEntity.notFound().build();
+            var resource = FolderResourceFromEntityAssembler.toResourceFromEntity(folder.get());
+            return ResponseEntity.ok(resource);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @Operation(summary = "Delete folder", description = "Deletes a folder by its ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Folder deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Folder not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @DeleteMapping("/{folderId}")
+    public ResponseEntity<?> deleteFolder(@PathVariable UUID folderId) {
+        try {
+            folderCommandService.handle(new DeleteFolderByIdCommand(folderId));
+            return ResponseEntity.ok(new MessageResource("Folder deleted successfully"));
+        } catch (Exception e) {
+            throw new RuntimeException("Error deleting folder: " + e.getMessage());
+        }
+    }
+
+    @Operation(summary = "Get folder ascendant hierarchy", description = "Retrieves the ascendant hierarchy of a folder by its ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Folder hierarchy retrieved successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = FolderAscendantHierarchyResource.class))),
+            @ApiResponse(responseCode = "404", description = "Folder not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/{folderId}/ascendant_hierarchy")
+    public ResponseEntity<FolderAscendantHierarchyResource> getFolderAscendantHierarchy(@PathVariable UUID folderId) {
+        var hierarchyResult = folderQueryService.handle(new GetFolderAscendantHierarchyQuery(folderId));
+        if (hierarchyResult.isEmpty()) return ResponseEntity.notFound().build();
+
+        var resource = FolderAscendantHierarchyResourceFromEntityAssembler.toResourceFromHierarchy(hierarchyResult.get());
+        return ResponseEntity.ok(resource);
+    }
+
+    @Operation(summary = "Get folder hierarchy for folder root", description = "Retrieves the descendant hierarchy of a root folder by its ID")
+    @GetMapping("/{folderId}/root_hierarchy")
+    public ResponseEntity<FolderDescendantHierarchyResource> getFolderDescendantHierarchy(@PathVariable UUID folderId) {
+        var folderResult = folderQueryService.handle(new GetFolderDescendantHierarchyQuery(folderId));
+        if (folderResult.isEmpty()) return ResponseEntity.notFound().build();
+
+        var assembler = new FolderDescendantHierarchyResourceFromEntityAssembler(repository);
+        var resource = assembler.toResourceFromEntity(folderResult.get());
+        return ResponseEntity.ok(resource);
+    }
+
+    @Operation(summary = "Batch update parent folder", description = "Updates the parent folder for multiple folders")
+    @PutMapping("/batch/update_parent_folder")
+    public ResponseEntity<List<FolderResource>> batchUpdateParentFolder(@RequestBody BatchUpdateFolderParentResource resource) {
+        var updatedFolders = resource.folderIds().stream()
+                .map(id -> folderCommandService.handle(new UpdateFolderParentCommand(id, resource.newParentFolderId())))
+                .filter(Optional::isPresent)
+                .map(opt -> FolderResourceFromEntityAssembler.toResourceFromEntity(opt.get()))
+                .toList();
+        return ResponseEntity.ok(updatedFolders);
+    }
+
+    @Operation(summary = "Batch delete folders", description = "Deletes multiple folders by their IDs")
+    @DeleteMapping("/batch")
+    public ResponseEntity<MessageResource> batchDeleteFolders(@RequestBody BatchDeleteFoldersResource resource) {
+        resource.folderIds().forEach(id -> {
+            try {
+                folderCommandService.handle(new DeleteFolderByIdCommand(id));
+            } catch (Exception e) {
+                throw new RuntimeException("Error deleting folder with ID " + id + ": " + e.getMessage());
+            }
+        });
+        return ResponseEntity.ok(new MessageResource("Folders deleted successfully"));
+    }
 }

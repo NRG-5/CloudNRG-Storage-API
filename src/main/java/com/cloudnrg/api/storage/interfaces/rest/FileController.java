@@ -1,5 +1,7 @@
 package com.cloudnrg.api.storage.interfaces.rest;
 
+import com.cloudnrg.api.shared.interfaces.rest.MessageResource;
+import com.cloudnrg.api.storage.application.internal.outboundservices.acl.ExternalUserService;
 import com.cloudnrg.api.storage.domain.model.commands.CreateFileCommand;
 import com.cloudnrg.api.storage.domain.model.commands.DeleteFileByIdCommand;
 import com.cloudnrg.api.storage.domain.model.commands.UpdateFileFolderCommand;
@@ -8,6 +10,8 @@ import com.cloudnrg.api.storage.domain.model.queries.GetFileByIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFilesByFolderIdQuery;
 import com.cloudnrg.api.storage.domain.services.FileCommandService;
 import com.cloudnrg.api.storage.domain.services.FileQueryService;
+import com.cloudnrg.api.storage.interfaces.rest.resources.BatchDeleteFilesResource;
+import com.cloudnrg.api.storage.interfaces.rest.resources.BatchUpdateFileParentFolderResource;
 import com.cloudnrg.api.storage.interfaces.rest.resources.FileResource;
 import com.cloudnrg.api.storage.interfaces.rest.transform.FileResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +21,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,10 +30,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.springframework.http.MediaType;
-import com.cloudnrg.api.storage.domain.model.queries.GetFileByIdQuery;
-
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @CrossOrigin(origins = "*", methods = { RequestMethod.POST, RequestMethod.GET, RequestMethod.PUT, RequestMethod.DELETE })
@@ -38,10 +42,12 @@ public class FileController {
 
     private final FileCommandService fileCommandService;
     private final FileQueryService fileQueryService;
+    private final ExternalUserService externalUserService;
 
-    public FileController(FileCommandService fileCommandService, FileQueryService fileQueryService) {
+    public FileController(FileCommandService fileCommandService, FileQueryService fileQueryService, ExternalUserService externalUserService) {
         this.fileCommandService = fileCommandService;
         this.fileQueryService = fileQueryService;
+        this.externalUserService = externalUserService;
     }
 
     @Operation(summary = "Upload a file", description = "Upload a file with metadata")
@@ -57,10 +63,16 @@ public class FileController {
     })
     public ResponseEntity<FileResource> uploadFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("userId") UUID userId,
+            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("folderId") UUID folderId
 
     ) {
+        var username = userDetails.getUsername();
+        var userId = externalUserService.fetchUserByUsername(username);
+
+        if (userId == null) {
+            return ResponseEntity.notFound().build();
+        }
 
         var createFileCommand = new CreateFileCommand(
                 file,
@@ -157,9 +169,9 @@ public class FileController {
     public ResponseEntity<?> deleteFileById(@PathVariable UUID fileId) {
         try {
             fileCommandService.handle(new DeleteFileByIdCommand(fileId));
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.ok(new MessageResource("File deleted successfully"));
         } catch (Exception e) {
-            return ResponseEntity.notFound().build();
+            throw new RuntimeException("Error deleting file: " + e.getMessage());
         }
     }
 
@@ -178,7 +190,6 @@ public class FileController {
 
         if (fileOptional.isEmpty()) {
             return ResponseEntity.notFound().build();
-
         }
 
 
@@ -188,7 +199,6 @@ public class FileController {
         // Check if file exists on disk
         if (!Files.exists(filePath)) {
             return ResponseEntity.notFound().build();
-
         }
 
         // Read file content
@@ -207,5 +217,32 @@ public class FileController {
                 .header("Content-Disposition", "inline; filename=\"" + file.getFilename() + "\"")
                 .body(fileContent);
     }
+    @Operation(summary = "Batch update file folders", description = "Update the parent folder of multiple files")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Files updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @PutMapping("/batch/update_parent_folder")
+    public ResponseEntity<List<FileResource>> batchUpdateFileFolders(@RequestBody BatchUpdateFileParentFolderResource resource) {
+        var updatedFiles = resource.fileIds().stream()
+                .map(id -> fileCommandService.handle(new UpdateFileFolderCommand(id, resource.newParentFolderId())))
+                .filter(Optional::isPresent)
+                .map(opt -> FileResourceFromEntityAssembler.toResourceFromEntity(opt.get(), "ok"))
+                .toList();
+        return ResponseEntity.ok(updatedFiles);
+    }
 
+    @Operation(summary = "Batch delete files", description = "Delete multiple files by their IDs")
+    @DeleteMapping("/batch")
+    public ResponseEntity<MessageResource> batchDeleteFiles(@RequestBody BatchDeleteFilesResource resource) {
+        resource.fileIds().forEach(fileId -> {
+            try {
+                fileCommandService.handle(new DeleteFileByIdCommand(fileId));
+            } catch (Exception e) {
+                throw new RuntimeException("Error deleting file with ID " + fileId + ": " + e.getMessage());
+            }
+        });
+        return ResponseEntity.ok(new MessageResource("Files deleted successfully"));
+    }
 }

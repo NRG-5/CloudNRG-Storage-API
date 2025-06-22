@@ -4,24 +4,28 @@ import com.cloudnrg.api.storage.application.internal.outboundservices.acl.Extern
 import com.cloudnrg.api.storage.domain.model.aggregates.Folder;
 import com.cloudnrg.api.storage.domain.model.commands.*;
 import com.cloudnrg.api.storage.domain.model.events.*;
+import com.cloudnrg.api.storage.domain.model.queries.GetFolderAscendantHierarchyQuery;
 import com.cloudnrg.api.storage.domain.services.FolderCommandService;
+import com.cloudnrg.api.storage.domain.services.FolderQueryService;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.FolderRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class FolderCommandServiceImpl implements FolderCommandService {
 
     private final FolderRepository folderRepository;
     private final ExternalUserService externalUserService;
-
+    private final FolderQueryService queryService;
     private final ApplicationEventPublisher eventPublisher;
 
-    public FolderCommandServiceImpl(FolderRepository folderRepository, ExternalUserService externalUserService, ApplicationEventPublisher eventPublisher) {
+    public FolderCommandServiceImpl(FolderRepository folderRepository, ExternalUserService externalUserService, FolderQueryService queryService, ApplicationEventPublisher eventPublisher) {
         this.folderRepository = folderRepository;
         this.externalUserService = externalUserService;
+        this.queryService = queryService;
         this.eventPublisher = eventPublisher;
     }
 
@@ -131,6 +135,10 @@ public class FolderCommandServiceImpl implements FolderCommandService {
 
         var newParentFolder = newParentFolderResult.get();
 
+        if (isDescendant(folder.getId(), command.parentFolderId())) {
+            throw new RuntimeException("Cannot set a folder as its own parent or a descendant of itself.");
+        }
+
         folder.setParentFolder(newParentFolder);
 
         try {
@@ -162,5 +170,11 @@ public class FolderCommandServiceImpl implements FolderCommandService {
         } catch (Exception e) {
             throw new RuntimeException("Error deleting folder: " + e.getMessage());
         }
+    }
+
+    private boolean isDescendant(UUID folderId, UUID newParentId) {
+        var hierarchyResult = queryService.handle(new GetFolderAscendantHierarchyQuery(newParentId));
+        if (hierarchyResult.isEmpty()) return false;
+        return hierarchyResult.get().stream().anyMatch(folder -> folder.getId().equals(folderId));
     }
 }

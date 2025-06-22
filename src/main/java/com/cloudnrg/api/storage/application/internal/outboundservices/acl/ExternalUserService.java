@@ -19,4 +19,7 @@ public class ExternalUserService {
         return iamContextFacade.fetchUserById(userId).get();
     }
 
+    public UUID fetchUserByUsername(String username)  {
+        return iamContextFacade.fetchUserIdByUsername(username);
+    }
 }
