@@ -1,11 +1,13 @@
 package com.cloudnrg.api.auditlog.application.internal.commandservices;
 
 import com.cloudnrg.api.auditlog.domain.model.aggregates.AuditLog;
-import com.cloudnrg.api.auditlog.domain.model.commands.RegisterAuditLogCommand;
+import com.cloudnrg.api.auditlog.domain.model.commands.CreateAuditLogCommand;
 
 import com.cloudnrg.api.auditlog.domain.services.AuditLogCommandService;
 import com.cloudnrg.api.auditlog.infrastructure.persistence.jpa.repositories.AuditLogRepository;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class AuditLogCommandServiceImpl implements AuditLogCommandService {
@@ -17,7 +19,7 @@ public class AuditLogCommandServiceImpl implements AuditLogCommandService {
     }
 
     @Override
-    public void handle(RegisterAuditLogCommand command) {
+    public Optional<AuditLog> handle(CreateAuditLogCommand command) {
         var log = new AuditLog(
                 command.userId(),
                 command.action(),
@@ -26,5 +28,7 @@ public class AuditLogCommandServiceImpl implements AuditLogCommandService {
                 command.description()
         );
         auditLogRepository.save(log);
+
+        return Optional.of(log);
     }
 }

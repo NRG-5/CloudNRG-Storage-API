@@ -33,7 +33,7 @@ public class FileCommandServiceImpl implements FileCommandService {
     private final UserRepository userRepository;
     private final ExternalObjectHistoryService externalObjectHistoryService;
 
-    private static final String UPLOAD_DIR = "D:\\Storage-CloudNRG\\";
+    private static final String UPLOAD_DIR = "C:\\Users\\Neo\\Documents\\provisional-storage\\";
 
     private final ApplicationEventPublisher eventPublisher;
 
@@ -123,7 +123,7 @@ public class FileCommandServiceImpl implements FileCommandService {
             cloudFileRepository.delete(file.get());
 
             // Publish the delete event
-            eventPublisher.publishEvent(new DeleteFileEvent(file, file.get().getId()));
+            eventPublisher.publishEvent(new DeleteFileEvent(file, file.get().getId(), file.get().getUser().getId()));
 
         } catch (Exception e) {
             throw new RuntimeException("Error deleting file: " + e.getMessage());
@@ -155,7 +155,8 @@ public class FileCommandServiceImpl implements FileCommandService {
             cloudFileRepository.save(file);
 
             // Publish an event after updating the file folder
-            eventPublisher.publishEvent(new UpdateFileParentFolderEvent(file, file.getId(), oldFolder.getId(), newFolder.getId()));
+            eventPublisher.publishEvent(new UpdateFileParentFolderEvent(
+                    file, file.getId(), oldFolder.getId(), newFolder.getId(), file.getUser().getId(),newFolder.getName(), oldFolder.getName()));
 
             externalObjectHistoryService.saveObjectHistoryUpdateFileParentFolder(file.getId(), file.getUser().getId(), newFolder.getId());
             return Optional.of(file);
@@ -180,7 +181,7 @@ public class FileCommandServiceImpl implements FileCommandService {
             cloudFileRepository.save(file);
 
             // Publish an event after updating the file name
-            eventPublisher.publishEvent(new UpdateFileNameEvent(file, file.getId(), command.name()));
+            eventPublisher.publishEvent(new UpdateFileNameEvent(file, file.getId(), command.name() , file.getFilename(), file.getUser().getId()));
             externalObjectHistoryService.saveObjectHistoryUpdateFileName(file.getId(), file.getUser().getId(), command.name());
             return Optional.of(file);
         } catch (Exception e) {
