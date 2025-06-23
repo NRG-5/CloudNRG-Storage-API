@@ -33,10 +33,16 @@ public class ObjectHistory extends AuditableAbstractAggregateRoot<ObjectHistory>
     @JoinColumn(name = "user_id")
     private User user;
 
-    public ObjectHistory(CloudFile file, User user, Action action) {
+    //defined as text
+    @NotNull
+    @Column(columnDefinition = "TEXT")
+    private String message;
+
+    public ObjectHistory(CloudFile file, User user, Action action, String message) {
         this.file = file;
         this.action = action;
         this.user = user;
+        this.message = message;
     }
 
     public UUID getFileId() {

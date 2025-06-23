@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface CloudFileRepository extends JpaRepository<CloudFile, UUID> {
 
     List<CloudFile> findCloudFilesByFolder_Id(UUID folderId);
+
+    CloudFile findCloudFileById(UUID id);
 }

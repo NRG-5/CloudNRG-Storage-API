@@ -18,7 +18,14 @@ public class FileCreationEventHandler {
 
     @EventListener(CreateFileEvent.class)
     public void on(CreateFileEvent event) {
-        externalObjectHistoryService.saveObjectHistoryCreateFile(event.getFileId(), event.getUserId());
+
+        // Create object history for the file creation event
+        externalObjectHistoryService.createObjectHistory(
+                event.getFileId(),
+                event.getUserId(),
+                "CREATE_FILE",
+                "File created"
+        );
 
         externalAuditLogService.createAuditLog(
                 event.getUserId(),

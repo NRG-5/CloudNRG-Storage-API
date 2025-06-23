@@ -19,7 +19,14 @@ public class FileNameUpdateEventHandler {
 
     @EventListener(UpdateFileNameEvent.class)
     public void on(UpdateFileNameEvent event) {
-        externalObjectHistoryService.saveObjectHistoryUpdateFileName(event.getFileId(), event.getUserId(), event.getNewFileName());
+
+        // Create object history for the file name update event
+        externalObjectHistoryService.createObjectHistory(
+                event.getFileId(),
+                event.getUserId(),
+                "UPDATE_FILE_NAME",
+                "File name updated from " + event.getOldFileName() + " to " + event.getNewFileName()
+        );
 
         externalAuditLogService.createAuditLog(
                 event.getUserId(),

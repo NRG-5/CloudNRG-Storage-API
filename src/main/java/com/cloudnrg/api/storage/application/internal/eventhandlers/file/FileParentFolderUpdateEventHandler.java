@@ -19,7 +19,14 @@ public class FileParentFolderUpdateEventHandler {
 
     @EventListener(UpdateFileParentFolderEvent.class)
     public void on(UpdateFileParentFolderEvent event) {
-        externalObjectHistoryService.saveObjectHistoryUpdateFileParentFolder(event.getFileId(), event.getUserId(), event.getNewParentFolderId());
+
+        // Create object history for the file parent folder update event
+        externalObjectHistoryService.createObjectHistory(
+                event.getFileId(),
+                event.getUserId(),
+                "UPDATE_FILE_PARENT_FOLDER",
+                "File parent folder updated from " + event.getOldParentFolderName() + " to " + event.getNewParentFolderName()
+        );
 
         externalAuditLogService.createAuditLog(
                 event.getUserId(),

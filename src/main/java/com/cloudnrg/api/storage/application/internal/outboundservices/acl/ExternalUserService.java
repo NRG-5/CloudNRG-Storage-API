@@ -16,7 +16,11 @@ public class ExternalUserService {
     }
 
     public User fetchUserById(UUID userId) {
-        return iamContextFacade.fetchUserById(userId).get();
+        var user = iamContextFacade.fetchUserById(userId);
+        if (user.isEmpty()) {
+            throw new IllegalArgumentException("User with ID " + userId + " does not exist.");
+        }
+        return user.get();
     }
 
     public UUID fetchUserByUsername(String username)  {

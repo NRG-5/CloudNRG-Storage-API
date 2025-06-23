@@ -19,7 +19,7 @@ public class FileDeletionEventHandler {
 
     @EventListener(DeleteFileEvent.class)
     public void on(DeleteFileEvent event) {
-        externalObjectHistoryService.deleteAllObjectsHistoryByFileId(event.getFileId());
+        externalObjectHistoryService.deleteObjectHistoriesByFileId(event.getFileId());
 
         externalAuditLogService.createAuditLog(
                 event.getUserId(),
