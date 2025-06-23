@@ -136,7 +136,7 @@ public class FileController {
         }
     }
 
-    @Operation(summary = "Update file folder", description = "Updates the folder of a file by its ID")
+    /*@Operation(summary = "Update file folder", description = "Updates the folder of a file by its ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "File folder updated successfully"),
             @ApiResponse(responseCode = "404", description = "File not found"),
@@ -173,7 +173,7 @@ public class FileController {
         } catch (Exception e) {
             throw new RuntimeException("Error deleting file: " + e.getMessage());
         }
-    }
+    }*/
 
 
     @Operation(summary = "Get file by ID", description = "Retrieve a file by its ID")
@@ -217,13 +217,13 @@ public class FileController {
                 .header("Content-Disposition", "inline; filename=\"" + file.getFilename() + "\"")
                 .body(fileContent);
     }
-    @Operation(summary = "Batch update file folders", description = "Update the parent folder of multiple files")
+    @Operation(summary = "Update files folder", description = "Update the parent folder of multiple files")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Files updated successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @PutMapping("/batch/update_parent_folder")
+    @PutMapping("/batch/parent")
     public ResponseEntity<List<FileResource>> batchUpdateFileFolders(@RequestBody BatchUpdateFileParentFolderResource resource) {
         var updatedFiles = resource.fileIds().stream()
                 .map(id -> fileCommandService.handle(new UpdateFileFolderCommand(id, resource.newParentFolderId())))
