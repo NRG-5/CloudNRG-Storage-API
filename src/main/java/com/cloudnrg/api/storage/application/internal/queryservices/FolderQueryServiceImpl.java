@@ -2,6 +2,7 @@ package com.cloudnrg.api.storage.application.internal.queryservices;
 
 import com.cloudnrg.api.storage.domain.model.aggregates.Folder;
 import com.cloudnrg.api.storage.domain.model.queries.GetFolderAscendantHierarchyQuery;
+import com.cloudnrg.api.storage.domain.model.queries.GetFolderByIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFolderDescendantHierarchyQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetRootFolderByUserIdQuery;
 import com.cloudnrg.api.storage.domain.services.FolderQueryService;
@@ -43,6 +44,11 @@ public class FolderQueryServiceImpl implements FolderQueryService {
 
     @Override
     public Optional<Folder> handle(GetFolderDescendantHierarchyQuery query) {
+        return folderRepository.findFolderById(query.folderId());
+    }
+
+    @Override
+    public Optional<Folder> handle(GetFolderByIdQuery query) {
         return folderRepository.findFolderById(query.folderId());
     }
 }

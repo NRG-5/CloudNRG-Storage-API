@@ -8,6 +8,7 @@ import com.cloudnrg.api.storage.domain.model.commands.DeleteFolderByIdCommand;
 import com.cloudnrg.api.storage.domain.model.commands.UpdateFolderNameCommand;
 import com.cloudnrg.api.storage.domain.model.commands.UpdateFolderParentCommand;
 import com.cloudnrg.api.storage.domain.model.queries.GetFolderAscendantHierarchyQuery;
+import com.cloudnrg.api.storage.domain.model.queries.GetFolderByIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFolderDescendantHierarchyQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetRootFolderByUserIdQuery;
 import com.cloudnrg.api.storage.domain.services.FolderCommandService;
@@ -52,7 +53,6 @@ public class FolderController {
         this.externalUserService = externalUserService;
     }
 
-    //TODO: refactorizar en obtener los archivos por un folderid y si este no es especificado obtener el del root folder
     @Operation(summary = "Get root folder by user id", description = "Get root folder by user id")
     @GetMapping(
             value = "/root",
@@ -148,7 +148,7 @@ public class FolderController {
         }
     }
 
-    @Operation(summary = "Update parent folder", description = "Updates the parent folder of a folder by its ID")
+    /*@Operation(summary = "Update parent folder", description = "Updates the parent folder of a folder by its ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Parent folder updated successfully",
                     content = @Content(mediaType = "application/json",
@@ -171,9 +171,9 @@ public class FolderController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
-    }
+    }*/
 
-    @Operation(summary = "Delete folder", description = "Deletes a folder by its ID")
+    /*@Operation(summary = "Delete folder", description = "Deletes a folder by its ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Folder deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Folder not found"),
@@ -206,11 +206,28 @@ public class FolderController {
 
         var resource = FolderAscendantHierarchyResourceFromEntityAssembler.toResourceFromHierarchy(hierarchyResult.get());
         return ResponseEntity.ok(resource);
-    }
+    }*/
 
-    @Operation(summary = "Get folder hierarchy for folder root", description = "Retrieves the descendant hierarchy of a root folder by its ID")
-    @GetMapping("/{folderId}/root_hierarchy")
-    public ResponseEntity<FolderDescendantHierarchyResource> getFolderDescendantHierarchy(@PathVariable UUID folderId) {
+    @Operation(summary = "Get folder hierarchy", description = "Retrieves the descendant hierarchy of a root folder by its ID")
+    @GetMapping("/hierarchy")
+    public ResponseEntity<FolderDescendantHierarchyResource> getFolderDescendantHierarchy(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+
+        var username = userDetails.getUsername();
+        var userId = externalUserService.fetchUserByUsername(username);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        var getRootFolderByUserIdQuery = new GetRootFolderByUserIdQuery(userId);
+        var rootFolder = folderQueryService.handle(getRootFolderByUserIdQuery);
+        if (rootFolder.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        var folderId = rootFolder.get().getId();
+
         var folderResult = folderQueryService.handle(new GetFolderDescendantHierarchyQuery(folderId));
         if (folderResult.isEmpty()) return ResponseEntity.notFound().build();
 
@@ -219,8 +236,8 @@ public class FolderController {
         return ResponseEntity.ok(resource);
     }
 
-    @Operation(summary = "Batch update parent folder", description = "Updates the parent folder for multiple folders")
-    @PutMapping("/batch/update_parent_folder")
+    @Operation(summary = "Update parent folder", description = "Updates the parent folder for multiple folders")
+    @PutMapping("/batch/parent")
     public ResponseEntity<List<FolderResource>> batchUpdateParentFolder(@RequestBody BatchUpdateFolderParentResource resource) {
         var updatedFolders = resource.folderIds().stream()
                 .map(id -> folderCommandService.handle(new UpdateFolderParentCommand(id, resource.newParentFolderId())))
@@ -242,4 +259,49 @@ public class FolderController {
         });
         return ResponseEntity.ok(new MessageResource("Folders deleted successfully"));
     }
+
+
+    @Operation(summary = "Get folder by ID", description = "Retrieves a folder by its ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Folder retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Folder not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping()
+    public ResponseEntity<FolderResource> getFolderById(
+            @RequestParam(required = false) UUID folderId,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+
+        String username = userDetails.getUsername();
+        var userId = externalUserService.fetchUserByUsername(username);
+
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (folderId == null) {
+            var rootFolderOpt = folderQueryService.handle(new GetRootFolderByUserIdQuery(userId));
+            if (rootFolderOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            var folderResource = FolderResourceFromEntityAssembler.toResourceFromEntity(rootFolderOpt.get());
+            return ResponseEntity.ok(folderResource);
+        }
+
+        var query = new GetFolderByIdQuery(folderId);
+        var folderOpt = folderQueryService.handle(query);
+        if (folderOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        var folderResource = FolderResourceFromEntityAssembler.toResourceFromEntity(folderOpt.get());
+        return ResponseEntity.ok(folderResource);
+
+    }
+
+
+
+
+
 }
