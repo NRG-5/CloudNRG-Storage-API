@@ -1,5 +1,6 @@
 package com.cloudnrg.api.storage.interfaces.rest;
 
+import com.cloudnrg.api.shared.infrastructure.ratelimiting.bucket4j.configuration.RateLimitConfig;
 import com.cloudnrg.api.shared.interfaces.rest.MessageResource;
 import com.cloudnrg.api.storage.application.internal.outboundservices.acl.ExternalUserService;
 import com.cloudnrg.api.storage.domain.model.commands.CreateFileCommand;
@@ -14,10 +15,12 @@ import com.cloudnrg.api.storage.interfaces.rest.resources.BatchDeleteFilesResour
 import com.cloudnrg.api.storage.interfaces.rest.resources.BatchUpdateFileParentFolderResource;
 import com.cloudnrg.api.storage.interfaces.rest.resources.FileResource;
 import com.cloudnrg.api.storage.interfaces.rest.transform.FileResourceFromEntityAssembler;
+import io.github.bucket4j.Bucket;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -43,12 +46,20 @@ public class FileController {
     private final FileCommandService fileCommandService;
     private final FileQueryService fileQueryService;
     private final ExternalUserService externalUserService;
+    @Autowired
+    private RateLimitConfig rateLimitConfig;
 
-    public FileController(FileCommandService fileCommandService, FileQueryService fileQueryService, ExternalUserService externalUserService) {
+
+    public FileController(
+            FileCommandService fileCommandService,
+            FileQueryService fileQueryService,
+            ExternalUserService externalUserService
+    ) {
         this.fileCommandService = fileCommandService;
         this.fileQueryService = fileQueryService;
         this.externalUserService = externalUserService;
     }
+
 
     @Operation(summary = "Upload a file", description = "Upload a file with metadata")
     @PostMapping(
@@ -136,45 +147,6 @@ public class FileController {
         }
     }
 
-    /*@Operation(summary = "Update file folder", description = "Updates the folder of a file by its ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "File folder updated successfully"),
-            @ApiResponse(responseCode = "404", description = "File not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
-    })
-    @PutMapping(value = "/{fileId}/folder", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<FileResource> updateFileFolder(@PathVariable UUID fileId, @RequestParam("folderId") UUID folderId) {
-        try {
-            var updateFileFolderCommand = new UpdateFileFolderCommand(fileId, folderId);
-            var updatedFile = fileCommandService.handle(updateFileFolderCommand);
-            if (updatedFile.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-            var fileResource = FileResourceFromEntityAssembler.toResourceFromEntity(updatedFile.get(), "ok");
-            return ResponseEntity.ok(fileResource);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new FileResource(null, "Error updating file folder"));
-        }
-    }
-
-    @Operation(summary = "Delete file by ID", description = "Delete a file by its ID")
-    @DeleteMapping(value = "/{fileId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "File deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "File not found"),
-            @ApiResponse(responseCode = "500", description = "Internal server error"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
-    })
-    public ResponseEntity<?> deleteFileById(@PathVariable UUID fileId) {
-        try {
-            fileCommandService.handle(new DeleteFileByIdCommand(fileId));
-            return ResponseEntity.ok(new MessageResource("File deleted successfully"));
-        } catch (Exception e) {
-            throw new RuntimeException("Error deleting file: " + e.getMessage());
-        }
-    }*/
-
 
     @Operation(summary = "Get file by ID", description = "Retrieve a file by its ID")
     @GetMapping(value = "/{fileId}")
@@ -182,8 +154,18 @@ public class FileController {
             @ApiResponse(responseCode = "200", description = "File retrieved successfully"),
             @ApiResponse(responseCode = "404", description = "File not found")
     })
-    public ResponseEntity<byte[]> getFileById(@PathVariable UUID fileId) {
+    public ResponseEntity<byte[]> getFileById(@PathVariable UUID fileId , @AuthenticationPrincipal UserDetails userDetails) {
 
+        var username = userDetails.getUsername();
+        var userId = externalUserService.fetchUserByUsername(username);
+
+        if (userId == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Bucket bucket = rateLimitConfig.resolveBucket(userId.toString(), 1);
+
+        if(bucket.tryConsume(1)) {
         var getFileByIdQuery = new GetFileByIdQuery(fileId);
 
         var fileOptional = fileQueryService.handle(getFileByIdQuery);
@@ -215,8 +197,12 @@ public class FileController {
                 .contentType(MediaType.parseMediaType(file.getMimeType()))
                 .contentLength(file.getSize())
                 .header("Content-Disposition", "inline; filename=\"" + file.getFilename() + "\"")
-                .body(fileContent);
+                .body(fileContent);}
+        else {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(null);
+        }
     }
+
     @Operation(summary = "Update files folder", description = "Update the parent folder of multiple files")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Files updated successfully"),
