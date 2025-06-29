@@ -21,7 +21,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private RateLimitConfig rateLimitConfig;
 
     // Adjust these values as needed
-    private static final int REQUESTS_PER_MINUTE = 2;
+    private static final int REQUESTS_PER_MINUTE = 100;
     private static final String RATE_LIMIT_HEADER = "X-Rate-Limit-Retry-After";
 
     @Override

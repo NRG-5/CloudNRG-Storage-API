@@ -46,8 +46,6 @@ public class FileController {
     private final FileCommandService fileCommandService;
     private final FileQueryService fileQueryService;
     private final ExternalUserService externalUserService;
-    @Autowired
-    private RateLimitConfig rateLimitConfig;
 
 
     public FileController(
