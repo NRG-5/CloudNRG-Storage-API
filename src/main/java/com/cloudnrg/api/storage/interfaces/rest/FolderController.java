@@ -32,6 +32,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -300,8 +301,33 @@ public class FolderController {
 
     }
 
+    @Operation(summary = "Get total folders", description = "Retrieves the total number of folders for the authenticated user")
+    @GetMapping("/analytics/total-folders")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Total folders retrieved successfully",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Map.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<Map<String, Object>> getTotalFolders(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        String username = userDetails.getUsername();
+        UUID userId = externalUserService.fetchUserByUsername(username);
 
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
+        Integer totalFolders = repository.countByUserId(userId);
+
+        Map<String, Object> response = Map.of(
+                "userId", userId,
+                "totalFolders", totalFolders
+        );
+
+        return ResponseEntity.ok(response);
+    }
 
 
 }
