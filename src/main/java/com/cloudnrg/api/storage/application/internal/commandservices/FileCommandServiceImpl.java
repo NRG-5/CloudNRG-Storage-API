@@ -15,6 +15,7 @@ import com.cloudnrg.api.storage.domain.services.FileCommandService;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.CloudFileRepository;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.FolderRepository;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +33,8 @@ public class FileCommandServiceImpl implements FileCommandService {
     private final FolderRepository folderRepository;
     private final UserRepository userRepository;
 
-    private static final String UPLOAD_DIR = "C:\\Users\\Neo\\Documents\\provisional-storage\\";
+    @Value("${app.upload-dir:/storage}")
+    private String uploadDir; //"C:\\Users\\Neo\\Documents\\provisional-storage\\";
 
     private final ApplicationEventPublisher eventPublisher;
 
@@ -72,37 +74,43 @@ public class FileCommandServiceImpl implements FileCommandService {
             throw new RuntimeException("Failed to upload file: " + e.getMessage());
         }
 
-        var tempPath = Paths.get(UPLOAD_DIR + tempFile.getOriginalFilename());
 
-        var file = new CloudFile(
-                tempFile.getOriginalFilename(),
-                folder.get(),
-                user.get(),
-                tempFile.getSize(),
-                tempFile.getContentType(),
-                md5Hash,
-                tempPath.toString()
-        );
 
         try {
 
-            cloudFileRepository.save(file);
+            // 1. Create the base upload directory path
+            Path uploadPath = Paths.get(uploadDir);
 
-            Path uploadPath = Paths.get(UPLOAD_DIR);
+            // 2. Ensure the directory exists
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
 
             Path filePath = uploadPath.resolve(Objects.requireNonNull(tempFile.getOriginalFilename()));
-            tempFile.transferTo(filePath.toFile());
+
+            var file = new CloudFile(
+                    tempFile.getOriginalFilename(),
+                    folder.get(),
+                    user.get(),
+                    tempFile.getSize(),
+                    tempFile.getContentType(),
+                    md5Hash,
+                    filePath.toString()
+            );
+
+            cloudFileRepository.save(file);
+
+
+            tempFile.transferTo(filePath);
 
             // Publish the event after saving the file
             eventPublisher.publishEvent(new CreateFileEvent(file, file.getId(), user.get().getId()));
+            return Optional.of(file);
         } catch (Exception e) {
             throw new IllegalArgumentException("Error while saving: " + e.getMessage());
         }
 
-        return Optional.of(file);
+
     }
 
 
