@@ -53,6 +53,25 @@ public class FolderController {
         this.externalUserService = externalUserService;
     }
 
+    @Operation(summary = "Search files by name", description = "Search for files by partial or full name")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Files found successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/search")
+    public ResponseEntity<List<FolderResource>> searchFilesByName(
+            @RequestParam("query") String query,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        var userId = externalUserService.fetchUserByUsername(userDetails.getUsername());
+        var folders = folderQueryService.searchByName(query, userId);
+        var resources = folders.stream()
+                .map(FolderResourceFromEntityAssembler::toResourceFromEntity)
+                .toList();
+        return ResponseEntity.ok(resources);
+    }
+
     @Operation(summary = "Get root folder by user id", description = "Get root folder by user id")
     @GetMapping(
             value = "/root",

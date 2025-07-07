@@ -6,10 +6,7 @@ import com.cloudnrg.api.storage.domain.services.FolderQueryService;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.FolderRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class FolderQueryServiceImpl implements FolderQueryService {
@@ -31,6 +28,24 @@ public class FolderQueryServiceImpl implements FolderQueryService {
         if (folderResult.isEmpty()) return Optional.empty();
         List<Folder> hierarchy = new ArrayList<>();
         Folder current = folderResult.get();
+        while (current != null) {
+            hierarchy.add(current);
+            current = current.getParentFolder();
+        }
+        Collections.reverse(hierarchy);
+        return Optional.of(hierarchy);
+    }
+
+    public List<Folder> searchByName(String query, UUID userId) {
+        return folderRepository.findByNameContainingIgnoreCaseAndUser_Id(query, userId);
+    }
+
+    @Override
+    public Optional<List<Folder>> handle(GetFolderHierarchyQuery query) {
+        var folderOpt = folderRepository.findFolderById(query.folderId());
+        if (folderOpt.isEmpty()) return Optional.empty();
+        List<Folder> hierarchy = new ArrayList<>();
+        Folder current = folderOpt.get();
         while (current != null) {
             hierarchy.add(current);
             current = current.getParentFolder();
