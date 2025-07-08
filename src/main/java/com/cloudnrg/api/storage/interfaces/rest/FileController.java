@@ -3,6 +3,7 @@ package com.cloudnrg.api.storage.interfaces.rest;
 import com.cloudnrg.api.shared.infrastructure.ratelimiting.bucket4j.configuration.RateLimitConfig;
 import com.cloudnrg.api.shared.interfaces.rest.MessageResource;
 import com.cloudnrg.api.storage.application.internal.outboundservices.acl.ExternalUserService;
+import com.cloudnrg.api.storage.domain.model.aggregates.CloudFile;
 import com.cloudnrg.api.storage.domain.model.commands.CreateFileCommand;
 import com.cloudnrg.api.storage.domain.model.commands.DeleteFileByIdCommand;
 import com.cloudnrg.api.storage.domain.model.commands.UpdateFileFolderCommand;
@@ -33,9 +34,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*", methods = { RequestMethod.POST, RequestMethod.GET, RequestMethod.PUT, RequestMethod.DELETE })
 @RestController
@@ -218,5 +218,105 @@ public class FileController {
             }
         });
         return ResponseEntity.ok(new MessageResource("Files deleted successfully"));
+    }
+
+    @Operation(summary = "Get total file size", description = "Returns the total size of files for the authenticated user")
+    @GetMapping("/analytics/total-size")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<Map<String, Object>> getTotalFileSize(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        String username = userDetails.getUsername();
+        UUID userId = externalUserService.fetchUserByUsername(username);
+
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        long totalSize = fileQueryService.handle(new GetFilesByFolderIdQuery(null))
+                .stream()
+                .filter(file -> file.getUser().getId().equals(userId))
+                .mapToLong(CloudFile::getSize)
+                .sum();
+
+        Map<String, Object> response = Map.of(
+                "userId", userId,
+                "totalSize", totalSize,
+                "totalSizeFormatted", formatFileSize(totalSize)
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Get total files count", description = "Returns the total number of files for the authenticated user")
+    @GetMapping("/analytics/total-files")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<Map<String, Object>> getTotalFiles(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        String username = userDetails.getUsername();
+        UUID userId = externalUserService.fetchUserByUsername(username);
+
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        long totalFiles = fileQueryService.handle(new GetFilesByFolderIdQuery(null))
+                .stream()
+                .filter(file -> file.getUser().getId().equals(userId))
+                .count();
+
+        Map<String, Object> response = Map.of(
+                "userId", userId,
+                "totalFiles", totalFiles
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Get files by mime type", description = "Returns the number of files grouped by mime type")
+    @GetMapping("/analytics/by-mimetype")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<Map<String, Object>> getFilesByMimeType(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        String username = userDetails.getUsername();
+        UUID userId = externalUserService.fetchUserByUsername(username);
+
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Map<String, Long> filesByMimeType = fileQueryService.handle(new GetFilesByFolderIdQuery(null))
+                .stream()
+                .filter(file -> file.getUser().getId().equals(userId))
+                .collect(Collectors.groupingBy(CloudFile::getMimeType, Collectors.counting()));
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("userId", userId);
+        response.put("filesByMimeType", filesByMimeType);
+
+        return ResponseEntity.ok(response);
+    }
+
+    private String formatFileSize(long size) {
+        if (size < 1024) {
+            return size + " B";
+        } else if (size < 1024 * 1024) {
+            return String.format("%.2f KB", size / 1024.0);
+        } else if (size < 1024 * 1024 * 1024) {
+            return String.format("%.2f MB", size / (1024.0 * 1024));
+        } else {
+            return String.format("%.2f GB", size / (1024.0 * 1024 * 1024));
+        }
     }
 }
