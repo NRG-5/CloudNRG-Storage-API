@@ -123,12 +123,11 @@ public class FileCommandServiceImpl implements FileCommandService {
         }
 
         try {
-            // Delete the file record from the database
-            cloudFileRepository.delete(file.get());
-
             // Publish the delete event
             eventPublisher.publishEvent(new DeleteFileEvent(file, file.get().getId(), file.get().getUser().getId()));
 
+            // Delete the file record from the database
+            cloudFileRepository.delete(file.get());
         } catch (Exception e) {
             throw new RuntimeException("Error deleting file: " + e.getMessage());
         }
