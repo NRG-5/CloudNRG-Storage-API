@@ -11,5 +11,6 @@ public interface FileContextFacade {
     UUID createFile(MultipartFile file, UUID userId, UUID folderId);
     void deleteFileById(UUID fileId);
     Optional<CloudFile> fetchFileById(UUID fileId);
-    List<CloudFile> getFilesByFolderId(UUID folderId);
+    List<CloudFile> fetchFilesByFolderId(UUID folderId);
+    List<CloudFile> fetchAllFilesByUserId(UUID userId);
 }

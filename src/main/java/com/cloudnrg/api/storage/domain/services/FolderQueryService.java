@@ -11,7 +11,7 @@ public interface FolderQueryService {
     Optional<Folder> handle(GetRootFolderByUserIdQuery query);
     Optional<List<Folder>> handle(GetFolderAscendantHierarchyQuery query);
     Optional<Folder> handle(GetFolderDescendantHierarchyQuery query);
-
+    Optional<List<Folder>> handle(GetAllFoldersByUserIdQuery query);
     Optional<Folder> handle(GetFolderByIdQuery query);
 
     List<Folder> handle(GetFoldersByParentFolderIdQuery query);

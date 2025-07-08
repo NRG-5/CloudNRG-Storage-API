@@ -13,4 +13,8 @@ public interface CloudFileRepository extends JpaRepository<CloudFile, UUID> {
     List<CloudFile> findCloudFilesByFolder_Id(UUID folderId);
 
     CloudFile findCloudFileById(UUID id);
+
+    List<CloudFile> findAllFilesByUser_Id(UUID userId);
+
+    Integer countCloudFilesByUser_Id(UUID userId);
 }

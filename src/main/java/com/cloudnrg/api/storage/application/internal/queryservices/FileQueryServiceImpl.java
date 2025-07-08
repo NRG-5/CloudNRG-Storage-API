@@ -1,6 +1,7 @@
 package com.cloudnrg.api.storage.application.internal.queryservices;
 
 import com.cloudnrg.api.storage.domain.model.aggregates.CloudFile;
+import com.cloudnrg.api.storage.domain.model.queries.GetAllFilesByUserIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFileByIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFilesByFolderIdQuery;
 import com.cloudnrg.api.storage.domain.services.FileQueryService;
@@ -27,5 +28,10 @@ public class FileQueryServiceImpl implements FileQueryService {
     @Override
     public Optional<CloudFile> handle(GetFileByIdQuery query) {
         return cloudFileRepository.findById(query.id());
+    }
+
+    @Override
+    public List<CloudFile> handle(GetAllFilesByUserIdQuery query) {
+        return cloudFileRepository.findAllFilesByUser_Id(query.userId());
     }
 }

@@ -3,6 +3,7 @@ package com.cloudnrg.api.storage.application.acl;
 import com.cloudnrg.api.storage.domain.model.aggregates.CloudFile;
 import com.cloudnrg.api.storage.domain.model.commands.CreateFileCommand;
 import com.cloudnrg.api.storage.domain.model.commands.DeleteFileByIdCommand;
+import com.cloudnrg.api.storage.domain.model.queries.GetAllFilesByUserIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFileByIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFilesByFolderIdQuery;
 import com.cloudnrg.api.storage.domain.services.FileCommandService;
@@ -42,7 +43,12 @@ public class FileContextFacadeImpl implements FileContextFacade {
     }
 
     @Override
-    public List<CloudFile> getFilesByFolderId(UUID folderId) {
+    public List<CloudFile> fetchFilesByFolderId(UUID folderId) {
         return fileQueryService.handle(new GetFilesByFolderIdQuery(folderId));
+    }
+
+    @Override
+    public List<CloudFile> fetchAllFilesByUserId(UUID userId) {
+        return fileQueryService.handle(new GetAllFilesByUserIdQuery(userId));
     }
 }

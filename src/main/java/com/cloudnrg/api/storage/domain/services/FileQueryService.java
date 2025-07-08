@@ -1,6 +1,7 @@
 package com.cloudnrg.api.storage.domain.services;
 
 import com.cloudnrg.api.storage.domain.model.aggregates.CloudFile;
+import com.cloudnrg.api.storage.domain.model.queries.GetAllFilesByUserIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFileByIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFilesByFolderIdQuery;
 
@@ -10,4 +11,5 @@ import java.util.Optional;
 public interface FileQueryService {
     List<CloudFile> handle(GetFilesByFolderIdQuery query);
     Optional<CloudFile> handle(GetFileByIdQuery query);
+    List<CloudFile> handle(GetAllFilesByUserIdQuery query);
 }
