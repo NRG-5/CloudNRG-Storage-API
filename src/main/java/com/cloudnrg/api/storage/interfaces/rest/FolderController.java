@@ -54,6 +54,25 @@ public class FolderController {
         this.externalUserService = externalUserService;
     }
 
+    @Operation(summary = "Search files by name", description = "Search for files by partial or full name")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Files found successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/search")
+    public ResponseEntity<List<FolderResource>> searchFilesByName(
+            @RequestParam("query") String query,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        var userId = externalUserService.fetchUserByUsername(userDetails.getUsername());
+        var folders = folderQueryService.searchByName(query, userId);
+        var resources = folders.stream()
+                .map(FolderResourceFromEntityAssembler::toResourceFromEntity)
+                .toList();
+        return ResponseEntity.ok(resources);
+    }
+
     @Operation(summary = "Get root folder by user id", description = "Get root folder by user id")
     @GetMapping(
             value = "/root",
@@ -301,33 +320,24 @@ public class FolderController {
 
     }
 
-    @Operation(summary = "Get total folders", description = "Retrieves the total number of folders for the authenticated user")
-    @GetMapping("/analytics/total-folders")
+    @Operation(summary = "Get Folders by Parent Id ", description = "Returns a list of folders by their parent folder ID")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Total folders retrieved successfully",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Map.class))),
+            @ApiResponse(responseCode = "200", description = "Folders retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Parent folder not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<Map<String, Object>> getTotalFolders(
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
-        String username = userDetails.getUsername();
-        UUID userId = externalUserService.fetchUserByUsername(username);
+    @GetMapping("/parent/{parentFolderId}")
+    public ResponseEntity<List<FolderResource>> getFoldersByParentFolderId(@PathVariable UUID parentFolderId) {
+        var query = new com.cloudnrg.api.storage.domain.model.queries.GetFoldersByParentFolderIdQuery(parentFolderId);
+        var folders = folderQueryService.handle(query);
 
-        if (userId == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        Integer totalFolders = repository.countByUserId(userId);
-
-        Map<String, Object> response = Map.of(
-                "userId", userId,
-                "totalFolders", totalFolders
-        );
-
-        return ResponseEntity.ok(response);
+        var folderResources = folders.stream()
+                .map(FolderResourceFromEntityAssembler::toResourceFromEntity)
+                .toList();
+        return ResponseEntity.ok(folderResources);
     }
+
 
 
 }

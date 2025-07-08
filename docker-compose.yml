@@ -1,0 +1,38 @@
+
+services:
+  app:
+    build: .
+    ports:
+      - "8090:8090"
+    environment:
+      - DATASOURCE_URL=jdbc:postgresql://nrgpostge:5432/nrgpostge_db
+      - DATASOURCE_USERNAME=nrg_user
+      - DATASOURCE_PASSWORD=123
+      - DATA_REDIS_HOST=nrgcache
+      - DATA_REDIS_PORT=6379
+      - APP_UPLOAD_DIR=/storage
+      - APP_PORT=8090
+    volumes:
+      - ./provisional-storage:/storage
+    depends_on:
+      - nrgpostge
+      - nrgcache
+
+  nrgpostge:
+    image: postgres:16
+    environment:
+      - POSTGRES_DB=nrgpostge_db
+      - POSTGRES_USER=nrg_user
+      - POSTGRES_PASSWORD=123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  nrgcache:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres-data:

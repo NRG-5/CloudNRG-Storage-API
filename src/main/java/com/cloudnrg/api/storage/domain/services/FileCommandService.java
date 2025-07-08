@@ -3,6 +3,7 @@ package com.cloudnrg.api.storage.domain.services;
 import com.cloudnrg.api.storage.domain.model.aggregates.CloudFile;
 import com.cloudnrg.api.storage.domain.model.commands.*;
 
+import java.io.IOException;
 import java.util.Optional;
 
 public interface FileCommandService {

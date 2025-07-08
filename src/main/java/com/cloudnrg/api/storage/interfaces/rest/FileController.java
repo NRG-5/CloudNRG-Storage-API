@@ -46,8 +46,6 @@ public class FileController {
     private final FileCommandService fileCommandService;
     private final FileQueryService fileQueryService;
     private final ExternalUserService externalUserService;
-    @Autowired
-    private RateLimitConfig rateLimitConfig;
 
 
     public FileController(
@@ -154,18 +152,10 @@ public class FileController {
             @ApiResponse(responseCode = "200", description = "File retrieved successfully"),
             @ApiResponse(responseCode = "404", description = "File not found")
     })
-    public ResponseEntity<byte[]> getFileById(@PathVariable UUID fileId , @AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<byte[]> getFileById(@PathVariable UUID fileId ) {
 
-        var username = userDetails.getUsername();
-        var userId = externalUserService.fetchUserByUsername(username);
 
-        if (userId == null) {
-            return ResponseEntity.notFound().build();
-        }
 
-        Bucket bucket = rateLimitConfig.resolveBucket(userId.toString(), 1);
-
-        if(bucket.tryConsume(1)) {
         var getFileByIdQuery = new GetFileByIdQuery(fileId);
 
         var fileOptional = fileQueryService.handle(getFileByIdQuery);
@@ -189,18 +179,16 @@ public class FileController {
             fileContent = Files.readAllBytes(filePath);
         } catch (IOException e) {
             throw new RuntimeException(e);
-
         }
+
 
         // Set appropriate headers
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(file.getMimeType()))
                 .contentLength(file.getSize())
                 .header("Content-Disposition", "inline; filename=\"" + file.getFilename() + "\"")
-                .body(fileContent);}
-        else {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(null);
-        }
+                .body(fileContent);
+
     }
 
     @Operation(summary = "Update files folder", description = "Update the parent folder of multiple files")
