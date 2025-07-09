@@ -60,8 +60,8 @@ public class FolderQueryServiceImpl implements FolderQueryService {
     }
 
     @Override
-    public Optional<List<Folder>> handle(GetAllFoldersByUserIdQuery query) {
-        return folderRepository.findAllFoldersByUser_Id(query.userId());
+    public List<Folder> handle(GetAllFoldersByUserIdQuery query) {
+        return folderRepository.findFoldersByUser_Id(query.userId());
     }
 
     @Override
