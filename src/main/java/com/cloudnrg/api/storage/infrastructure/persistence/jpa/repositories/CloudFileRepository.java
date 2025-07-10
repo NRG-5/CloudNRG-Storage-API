@@ -1,6 +1,7 @@
 package com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories;
 
 import com.cloudnrg.api.storage.domain.model.aggregates.CloudFile;
+import com.cloudnrg.api.storage.domain.model.valueobjects.MimeTypeCount;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -33,5 +34,21 @@ public interface CloudFileRepository extends JpaRepository<CloudFile, UUID> {
     )
     List<CloudFile> searchCloudFileByFilename(@Param("query") String query);
 
-    void deleteCloudFilesByFolder_Id(UUID folderId);
+    Long countCloudFileByUser_Id(UUID userId);
+
+    @Query(value = "SELECT COALESCE(SUM(size), 0) FROM cloud_files WHERE user_id = CAST(:userId AS uuid)", nativeQuery = true)
+    Long sumAllFileSizes(UUID userId);
+
+    @Query(value = "SELECT COUNT(filename) AS count, mime_type AS mimeType " +
+            "FROM cloud_files " +
+            "WHERE user_id = CAST(:userId AS uuid) " +
+            "GROUP BY mime_type", nativeQuery = true)
+    List<MimeTypeCount> countByUserIdGroupedByMimeType(@Param("userId") String userId);
+
+
+
+
+
+
+
 }

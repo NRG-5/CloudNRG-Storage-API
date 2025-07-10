@@ -1,9 +1,9 @@
 package com.cloudnrg.api.storage.interfaces.rest;
 
-import com.cloudnrg.api.shared.infrastructure.ratelimiting.bucket4j.configuration.RateLimitConfig;
+import com.cloudnrg.api.storage.interfaces.rest.resources.FileCountResource;
+import com.cloudnrg.api.storage.interfaces.rest.resources.FileSizeResource;
 import com.cloudnrg.api.shared.interfaces.rest.MessageResource;
 import com.cloudnrg.api.storage.application.internal.outboundservices.acl.ExternalUserService;
-import com.cloudnrg.api.storage.domain.model.aggregates.CloudFile;
 import com.cloudnrg.api.storage.domain.model.commands.CreateFileCommand;
 import com.cloudnrg.api.storage.domain.model.commands.DeleteFileByIdCommand;
 import com.cloudnrg.api.storage.domain.model.commands.UpdateFileFolderCommand;
@@ -11,18 +11,18 @@ import com.cloudnrg.api.storage.domain.model.commands.UpdateFileNameCommand;
 import com.cloudnrg.api.storage.domain.model.queries.GetFileByIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFilesByFolderIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFilesBySearchQuery;
+import com.cloudnrg.api.storage.domain.model.valueobjects.MimeTypeCount;
 import com.cloudnrg.api.storage.domain.services.FileCommandService;
 import com.cloudnrg.api.storage.domain.services.FileQueryService;
+import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.CloudFileRepository;
 import com.cloudnrg.api.storage.interfaces.rest.resources.BatchDeleteFilesResource;
 import com.cloudnrg.api.storage.interfaces.rest.resources.BatchUpdateFileParentFolderResource;
 import com.cloudnrg.api.storage.interfaces.rest.resources.FileResource;
 import com.cloudnrg.api.storage.interfaces.rest.transform.FileResourceFromEntityAssembler;
-import io.github.bucket4j.Bucket;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -48,15 +48,18 @@ public class FileController {
     private final FileQueryService fileQueryService;
     private final ExternalUserService externalUserService;
 
+    private final CloudFileRepository cloudFileRepository;
 
     public FileController(
             FileCommandService fileCommandService,
             FileQueryService fileQueryService,
-            ExternalUserService externalUserService
+            ExternalUserService externalUserService,
+            CloudFileRepository cloudFileRepository
     ) {
         this.fileCommandService = fileCommandService;
         this.fileQueryService = fileQueryService;
         this.externalUserService = externalUserService;
+        this.cloudFileRepository = cloudFileRepository;
     }
 
 
@@ -239,13 +242,24 @@ public class FileController {
         return ResponseEntity.ok(new MessageResource("Files deleted successfully"));
     }
 
+
+
+
+
+
+
+
+
+
+    //ANALITICS ENDPOINTS
+
     @Operation(summary = "Get total file size", description = "Returns the total size of files for the authenticated user")
-    @GetMapping("/analytics/total-size")
+    @GetMapping("/analytics/size")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<Map<String, Object>> getTotalFileSize(
+    public ResponseEntity<FileSizeResource> getTotalFileSize(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         String username = userDetails.getUsername();
@@ -255,28 +269,20 @@ public class FileController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        long totalSize = fileQueryService.handle(new GetFilesByFolderIdQuery(null))
-                .stream()
-                .filter(file -> file.getUser().getId().equals(userId))
-                .mapToLong(CloudFile::getSize)
-                .sum();
+        var totalSize = cloudFileRepository.sumAllFileSizes(userId);
 
-        Map<String, Object> response = Map.of(
-                "userId", userId,
-                "totalSize", totalSize,
-                "totalSizeFormatted", formatFileSize(totalSize)
-        );
+        var totalSizeResource = new FileSizeResource(totalSize);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(totalSizeResource);
     }
 
     @Operation(summary = "Get total files count", description = "Returns the total number of files for the authenticated user")
-    @GetMapping("/analytics/total-files")
+    @GetMapping("/analytics/count")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<Map<String, Object>> getTotalFiles(
+    public ResponseEntity<FileCountResource> getTotalFiles(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         String username = userDetails.getUsername();
@@ -286,26 +292,21 @@ public class FileController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        long totalFiles = fileQueryService.handle(new GetFilesByFolderIdQuery(null))
-                .stream()
-                .filter(file -> file.getUser().getId().equals(userId))
-                .count();
 
-        Map<String, Object> response = Map.of(
-                "userId", userId,
-                "totalFiles", totalFiles
-        );
+        var totalFiles = cloudFileRepository.countCloudFileByUser_Id(userId);
 
-        return ResponseEntity.ok(response);
+        var totalFilesResource = new FileCountResource(totalFiles);
+
+        return ResponseEntity.ok(totalFilesResource);
     }
 
     @Operation(summary = "Get files by mime type", description = "Returns the number of files grouped by mime type")
-    @GetMapping("/analytics/by-mimetype")
+    @GetMapping("/analytics/count/mimetype")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<Map<String, Object>> getFilesByMimeType(
+    public ResponseEntity<Map<String, Long>> getFilesByMimeType(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         String username = userDetails.getUsername();
@@ -315,27 +316,19 @@ public class FileController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        Map<String, Long> filesByMimeType = fileQueryService.handle(new GetFilesByFolderIdQuery(null))
-                .stream()
-                .filter(file -> file.getUser().getId().equals(userId))
-                .collect(Collectors.groupingBy(CloudFile::getMimeType, Collectors.counting()));
+        var mimeTypeCounts = cloudFileRepository.countByUserIdGroupedByMimeType(userId.toString());
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("userId", userId);
-        response.put("filesByMimeType", filesByMimeType);
+        if (mimeTypeCounts.isEmpty()) {
+            return ResponseEntity.ok(Collections.emptyMap());
+        }
+
+        Map<String, Long> response = mimeTypeCounts.stream()
+                .collect(Collectors.toMap(
+                        MimeTypeCount::getMimeType,
+                        MimeTypeCount::getCount
+                ));
+
 
         return ResponseEntity.ok(response);
-    }
-
-    private String formatFileSize(long size) {
-        if (size < 1024) {
-            return size + " B";
-        } else if (size < 1024 * 1024) {
-            return String.format("%.2f KB", size / 1024.0);
-        } else if (size < 1024 * 1024 * 1024) {
-            return String.format("%.2f MB", size / (1024.0 * 1024));
-        } else {
-            return String.format("%.2f GB", size / (1024.0 * 1024 * 1024));
-        }
     }
 }

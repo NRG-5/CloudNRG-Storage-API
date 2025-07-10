@@ -16,5 +16,4 @@ public interface FolderQueryService {
 
     List<Folder> handle(GetFoldersByParentFolderIdQuery query);
     Optional<List<Folder>> handle(GetFolderHierarchyQuery query);
-    List<Folder> searchByName(String query, UUID userId);
 }

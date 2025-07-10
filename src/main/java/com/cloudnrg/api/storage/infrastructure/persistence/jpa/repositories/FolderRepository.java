@@ -19,5 +19,7 @@ public interface FolderRepository extends JpaRepository<Folder, UUID> {
 
     List<Folder> findFoldersByParentFolder_Id(UUID parentFolderId);
 
-    List<Folder> findByNameContainingIgnoreCaseAndUser_Id(String name, UUID userId);
+    Long countFolderByUser_Id(UUID userId);
+
+
 }
