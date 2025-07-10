@@ -163,10 +163,16 @@ public class FolderCommandServiceImpl implements FolderCommandService {
         }
 
         try {
-            folderRepository.delete(folder.get());
+
 
             // Publish an event after deleting the folder
-            eventPublisher.publishEvent(new DeleteFolderEvent(folder, folder.get().getId(), folder.get().getUser().getId()));
+            eventPublisher.publishEvent(new DeleteFolderEvent(
+                    folder,
+                    folder.get().getId(),
+                    folder.get().getUser().getId() ));
+
+            folderRepository.delete(folder.get());
+
         } catch (Exception e) {
             throw new RuntimeException("Error deleting folder: " + e.getMessage());
         }

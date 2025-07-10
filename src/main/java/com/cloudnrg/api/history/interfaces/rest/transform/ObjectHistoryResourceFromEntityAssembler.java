@@ -9,7 +9,8 @@ public class ObjectHistoryResourceFromEntityAssembler {
                 entity.getId(),
                 entity.getFileId(),
                 entity.getUserId(),
-                entity.getAction()
+                entity.getAction(),
+                entity.getMessage()
         );
     }
 }

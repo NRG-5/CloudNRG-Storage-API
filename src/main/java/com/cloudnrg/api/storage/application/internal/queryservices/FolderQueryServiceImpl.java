@@ -36,9 +36,6 @@ public class FolderQueryServiceImpl implements FolderQueryService {
         return Optional.of(hierarchy);
     }
 
-    public List<Folder> searchByName(String query, UUID userId) {
-        return folderRepository.findByNameContainingIgnoreCaseAndUser_Id(query, userId);
-    }
 
     @Override
     public Optional<List<Folder>> handle(GetFolderHierarchyQuery query) {
