@@ -44,33 +44,20 @@ public class FolderController {
 
     private final FolderQueryService folderQueryService;
     private final FolderCommandService folderCommandService;
-    private final FolderRepository repository;
     private final ExternalUserService externalUserService;
 
-    public FolderController(FolderQueryService folderQueryService, FolderCommandService folderCommandService, FolderRepository repository, ExternalUserService externalUserService) {
+    private final FolderRepository repository;
+
+    public FolderController(
+            FolderQueryService folderQueryService,
+            FolderCommandService folderCommandService,
+            ExternalUserService externalUserService,
+            FolderRepository repository
+    ) {
         this.folderQueryService = folderQueryService;
         this.folderCommandService = folderCommandService;
-        this.repository = repository;
         this.externalUserService = externalUserService;
-    }
-
-    @Operation(summary = "Search files by name", description = "Search for files by partial or full name")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Files found successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
-    })
-    @GetMapping("/search")
-    public ResponseEntity<List<FolderResource>> searchFilesByName(
-            @RequestParam("query") String query,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        var userId = externalUserService.fetchUserByUsername(userDetails.getUsername());
-        var folders = folderQueryService.searchByName(query, userId);
-        var resources = folders.stream()
-                .map(FolderResourceFromEntityAssembler::toResourceFromEntity)
-                .toList();
-        return ResponseEntity.ok(resources);
+        this.repository = repository;
     }
 
     @Operation(summary = "Get root folder by user id", description = "Get root folder by user id")
@@ -167,66 +154,6 @@ public class FolderController {
             return ResponseEntity.badRequest().build();
         }
     }
-
-    /*@Operation(summary = "Update parent folder", description = "Updates the parent folder of a folder by its ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Parent folder updated successfully",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = FolderResource.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid input data"),
-            @ApiResponse(responseCode = "404", description = "Folder or parent not found"),
-            @ApiResponse(responseCode = "500", description = "Internal server error"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
-    })
-    @PutMapping("/{folderId}/parent")
-    public ResponseEntity<FolderResource> updateParentFolder(
-            @PathVariable UUID folderId,
-            @RequestParam UUID parentId) {
-        try {
-            var command = new UpdateFolderParentCommand(folderId, parentId);
-            var folder = folderCommandService.handle(command);
-            if (folder.isEmpty()) return ResponseEntity.notFound().build();
-            var resource = FolderResourceFromEntityAssembler.toResourceFromEntity(folder.get());
-            return ResponseEntity.ok(resource);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }*/
-
-    /*@Operation(summary = "Delete folder", description = "Deletes a folder by its ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Folder deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Folder not found"),
-            @ApiResponse(responseCode = "500", description = "Internal server error"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
-    })
-    @DeleteMapping("/{folderId}")
-    public ResponseEntity<?> deleteFolder(@PathVariable UUID folderId) {
-        try {
-            folderCommandService.handle(new DeleteFolderByIdCommand(folderId));
-            return ResponseEntity.ok(new MessageResource("Folder deleted successfully"));
-        } catch (Exception e) {
-            throw new RuntimeException("Error deleting folder: " + e.getMessage());
-        }
-    }
-
-    @Operation(summary = "Get folder ascendant hierarchy", description = "Retrieves the ascendant hierarchy of a folder by its ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Folder hierarchy retrieved successfully",
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = FolderAscendantHierarchyResource.class))),
-            @ApiResponse(responseCode = "404", description = "Folder not found"),
-            @ApiResponse(responseCode = "500", description = "Internal server error"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
-    })
-    @GetMapping("/{folderId}/ascendant_hierarchy")
-    public ResponseEntity<FolderAscendantHierarchyResource> getFolderAscendantHierarchy(@PathVariable UUID folderId) {
-        var hierarchyResult = folderQueryService.handle(new GetFolderAscendantHierarchyQuery(folderId));
-        if (hierarchyResult.isEmpty()) return ResponseEntity.notFound().build();
-
-        var resource = FolderAscendantHierarchyResourceFromEntityAssembler.toResourceFromHierarchy(hierarchyResult.get());
-        return ResponseEntity.ok(resource);
-    }*/
 
     @Operation(summary = "Get folder hierarchy", description = "Retrieves the descendant hierarchy of a root folder by its ID")
     @GetMapping("/hierarchy")

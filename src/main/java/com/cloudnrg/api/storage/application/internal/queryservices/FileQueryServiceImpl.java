@@ -3,6 +3,7 @@ package com.cloudnrg.api.storage.application.internal.queryservices;
 import com.cloudnrg.api.storage.domain.model.aggregates.CloudFile;
 import com.cloudnrg.api.storage.domain.model.queries.GetFileByIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFilesByFolderIdQuery;
+import com.cloudnrg.api.storage.domain.model.queries.GetFilesBySearchQuery;
 import com.cloudnrg.api.storage.domain.services.FileQueryService;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.CloudFileRepository;
 import org.springframework.stereotype.Service;
@@ -28,4 +29,10 @@ public class FileQueryServiceImpl implements FileQueryService {
     public Optional<CloudFile> handle(GetFileByIdQuery query) {
         return cloudFileRepository.findById(query.id());
     }
+
+    @Override
+    public List<CloudFile> handle(GetFilesBySearchQuery query) {
+        return cloudFileRepository.searchCloudFileByFilename(query.searchTerm());
+    }
+
 }

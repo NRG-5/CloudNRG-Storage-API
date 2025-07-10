@@ -10,6 +10,7 @@ import com.cloudnrg.api.storage.domain.model.commands.UpdateFileFolderCommand;
 import com.cloudnrg.api.storage.domain.model.commands.UpdateFileNameCommand;
 import com.cloudnrg.api.storage.domain.model.queries.GetFileByIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFilesByFolderIdQuery;
+import com.cloudnrg.api.storage.domain.model.queries.GetFilesBySearchQuery;
 import com.cloudnrg.api.storage.domain.services.FileCommandService;
 import com.cloudnrg.api.storage.domain.services.FileQueryService;
 import com.cloudnrg.api.storage.interfaces.rest.resources.BatchDeleteFilesResource;
@@ -98,6 +99,24 @@ public class FileController {
         var fileResource = FileResourceFromEntityAssembler.toResourceFromEntity(cloudFile.get(), "ok");
 
         return new ResponseEntity<>(fileResource, HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "Search files", description = "Search for files by filename")
+    @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<FileResource>> searchFiles(@RequestParam ("query") String query) {
+        var getFilesBySearchQuery = new GetFilesBySearchQuery(query);
+
+        var files = fileQueryService.handle(getFilesBySearchQuery);
+
+        if (files.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        var fileResources = files.stream()
+                .map(file -> FileResourceFromEntityAssembler.toResourceFromEntity(file, "ok"))
+                .toList();
+
+        return ResponseEntity.ok(fileResources);
     }
 
     @Operation(summary = "Get files by folder ID", description = "Retrieve files associated with a specific folder ID")

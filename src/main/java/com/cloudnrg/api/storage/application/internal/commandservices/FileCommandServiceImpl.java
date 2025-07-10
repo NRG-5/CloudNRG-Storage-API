@@ -128,6 +128,13 @@ public class FileCommandServiceImpl implements FileCommandService {
 
             // Delete the file record from the database
             cloudFileRepository.delete(file.get());
+
+            // Delete the file from the filesystem
+            Path filePath = Paths.get(file.get().getPath());
+            if (Files.exists(filePath)) {
+                Files.delete(filePath);
+            }
+
         } catch (Exception e) {
             throw new RuntimeException("Error deleting file: " + e.getMessage());
         }
