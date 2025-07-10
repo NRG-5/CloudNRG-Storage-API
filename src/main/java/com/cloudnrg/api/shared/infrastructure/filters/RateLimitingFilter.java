@@ -21,7 +21,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private RateLimitConfig rateLimitConfig;
 
     // Adjust these values as needed
-    private static final int REQUESTS_PER_MINUTE = 100;
+    private static final int REQUESTS_PER_SECOND = 1;
     private static final String RATE_LIMIT_HEADER = "X-Rate-Limit-Retry-After";
 
     @Override
@@ -40,7 +40,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7); // Remove "Bearer " prefix
 
         // Get user's bucket
-        Bucket bucket = rateLimitConfig.resolveBucket(token, REQUESTS_PER_MINUTE);
+        Bucket bucket = rateLimitConfig.resolveBucket(token, REQUESTS_PER_SECOND);
 
         // Check rate limit
         if (bucket.tryConsume(1)) {
