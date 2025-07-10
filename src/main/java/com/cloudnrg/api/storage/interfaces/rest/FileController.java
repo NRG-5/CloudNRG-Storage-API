@@ -327,6 +327,29 @@ public class FileController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Search top 10 files", description = "Search for files by filename and return only the top 10 results")
+    @GetMapping(value = "/search/top", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Files retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "No files found matching the criteria")
+    })
+    public ResponseEntity<List<FileResource>> searchTopTenFiles(@RequestParam("query") String query) {
+
+        var getFilesBySearchQuery = new GetFilesBySearchQuery(query);
+        var files = fileQueryService.handle(getFilesBySearchQuery);
+
+        if (files.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        var topTenFiles = files.stream()
+                .limit(10)
+                .map(file -> FileResourceFromEntityAssembler.toResourceFromEntity(file, "ok"))
+                .toList();
+
+        return ResponseEntity.ok(topTenFiles);
+    }
+
     private String formatFileSize(long size) {
         if (size < 1024) {
             return size + " B";
