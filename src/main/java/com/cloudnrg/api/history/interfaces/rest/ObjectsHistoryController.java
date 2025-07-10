@@ -78,13 +78,13 @@ public class ObjectsHistoryController {
         return ResponseEntity.ok(objectsHistoryResources);
     }
 
-    @Operation(summary = "Create Object History for File Creation", description = "Create an Object History record when a file is created.")
+    @Operation(summary = "Get object history by file", description = "Get all Object History records associated with a specific File ID.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Object History created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @GetMapping("/{fileId}")
+    @GetMapping("/file/{fileId}")
     public ResponseEntity<List<ObjectHistoryResource>> getAllObjectsHistoryByFileId(@PathVariable UUID fileId) {
         var getAllObjectsHistoryQuery = new GetAllObjectsHistoryByFileIdQuery(fileId);
         var objectsHistory = queryService.handle(getAllObjectsHistoryQuery);

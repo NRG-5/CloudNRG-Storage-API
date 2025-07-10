@@ -32,4 +32,6 @@ public interface CloudFileRepository extends JpaRepository<CloudFile, UUID> {
             nativeQuery = true
     )
     List<CloudFile> searchCloudFileByFilename(@Param("query") String query);
+
+    void deleteCloudFilesByFolder_Id(UUID folderId);
 }
