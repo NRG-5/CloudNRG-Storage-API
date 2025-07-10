@@ -1,13 +1,13 @@
 package com.cloudnrg.api.storage.interfaces.rest;
 
 
+import com.cloudnrg.api.storage.interfaces.rest.resources.FolderCountResource;
 import com.cloudnrg.api.shared.interfaces.rest.MessageResource;
 import com.cloudnrg.api.storage.application.internal.outboundservices.acl.ExternalUserService;
 import com.cloudnrg.api.storage.domain.model.commands.CreateFolderCommand;
 import com.cloudnrg.api.storage.domain.model.commands.DeleteFolderByIdCommand;
 import com.cloudnrg.api.storage.domain.model.commands.UpdateFolderNameCommand;
 import com.cloudnrg.api.storage.domain.model.commands.UpdateFolderParentCommand;
-import com.cloudnrg.api.storage.domain.model.queries.GetFolderAscendantHierarchyQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFolderByIdQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetFolderDescendantHierarchyQuery;
 import com.cloudnrg.api.storage.domain.model.queries.GetRootFolderByUserIdQuery;
@@ -15,12 +15,9 @@ import com.cloudnrg.api.storage.domain.services.FolderCommandService;
 import com.cloudnrg.api.storage.domain.services.FolderQueryService;
 import com.cloudnrg.api.storage.infrastructure.persistence.jpa.repositories.FolderRepository;
 import com.cloudnrg.api.storage.interfaces.rest.resources.*;
-import com.cloudnrg.api.storage.interfaces.rest.transform.FolderAscendantHierarchyResourceFromEntityAssembler;
 import com.cloudnrg.api.storage.interfaces.rest.transform.FolderDescendantHierarchyResourceFromEntityAssembler;
 import com.cloudnrg.api.storage.interfaces.rest.transform.FolderResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,7 +29,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,18 +42,18 @@ public class FolderController {
     private final FolderCommandService folderCommandService;
     private final ExternalUserService externalUserService;
 
-    private final FolderRepository repository;
+    private final FolderRepository folderRepository;
 
     public FolderController(
             FolderQueryService folderQueryService,
             FolderCommandService folderCommandService,
             ExternalUserService externalUserService,
-            FolderRepository repository
+            FolderRepository folderRepository
     ) {
         this.folderQueryService = folderQueryService;
         this.folderCommandService = folderCommandService;
         this.externalUserService = externalUserService;
-        this.repository = repository;
+        this.folderRepository = folderRepository;
     }
 
     @Operation(summary = "Get root folder by user id", description = "Get root folder by user id")
@@ -178,7 +174,7 @@ public class FolderController {
         var folderResult = folderQueryService.handle(new GetFolderDescendantHierarchyQuery(folderId));
         if (folderResult.isEmpty()) return ResponseEntity.notFound().build();
 
-        var assembler = new FolderDescendantHierarchyResourceFromEntityAssembler(repository);
+        var assembler = new FolderDescendantHierarchyResourceFromEntityAssembler(folderRepository);
         var resource = assembler.toResourceFromEntity(folderResult.get());
         return ResponseEntity.ok(resource);
     }
@@ -265,6 +261,23 @@ public class FolderController {
         return ResponseEntity.ok(folderResources);
     }
 
+    @GetMapping("/analytics/count")
+    public ResponseEntity<FolderCountResource> getFolderCountByUserId(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        String username = userDetails.getUsername();
+        var userId = externalUserService.fetchUserByUsername(username);
+
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Long folderCount = folderRepository.countFolderByUser_Id(userId);
+
+        var folderCountResource = new FolderCountResource(folderCount);
+
+        return ResponseEntity.ok(folderCountResource);
+    }
 
 
 }

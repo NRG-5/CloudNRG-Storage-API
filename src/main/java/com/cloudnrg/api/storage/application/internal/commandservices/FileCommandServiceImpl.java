@@ -184,13 +184,14 @@ public class FileCommandServiceImpl implements FileCommandService {
         }
 
         var file = fileResult.get();
+        var oldFileName = file.getFilename();
         file.setFilename(command.name());
 
         try {
             cloudFileRepository.save(file);
 
             // Publish an event after updating the file name
-            eventPublisher.publishEvent(new UpdateFileNameEvent(file, file.getId(), command.name(), file.getFilename(), file.getUser().getId()));
+            eventPublisher.publishEvent(new UpdateFileNameEvent(file, file.getId(), command.name(), oldFileName, file.getUser().getId()));
             return Optional.of(file);
         } catch (Exception e) {
             throw new RuntimeException("Failed to update file name: " + e.getMessage());
